@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
 const express = require('express');
 const http = require('http');
@@ -61,6 +62,19 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/files', fileRoutes);
+
+// Serve static React client if built (Single-Origin / Mobile Tunnel / Production mode)
+const distPath = path.resolve(__dirname, '../../client/dist');
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/socket.io')) {
+      return next();
+    }
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+  console.log('📦 Single-origin active: Serving client/dist on same port');
+}
 
 // Global Error Handler
 app.use((err, req, res, next) => {

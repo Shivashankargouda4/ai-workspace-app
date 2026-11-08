@@ -84,6 +84,16 @@ export default function Kanban() {
     }
   };
 
+  const handleMoveTask = async (taskId, newColId) => {
+    try {
+      await api.patch(`/tasks/${taskId}/status`, { status: newColId });
+      toast.success(`Task moved to ${newColId}`);
+      fetchTasks();
+    } catch (err) {
+      toast.error('Failed to move task. Please verify login.');
+    }
+  };
+
   const getRiskBadge = (risk, prob) => {
     if (risk === 'high') {
       return (
@@ -162,9 +172,22 @@ export default function Kanban() {
                               </div>
                               <h4 className="font-medium text-slate-800 text-sm mb-3">{item.title}</h4>
                               <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-100">
-                                <span className="flex items-center gap-1">
-                                  <Calendar className="w-3.5 h-3.5" /> {item.days}d est
-                                </span>
+                                <div className="flex items-center gap-2">
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="w-3.5 h-3.5" /> {item.days}d
+                                  </span>
+                                  {/* Mobile & Touch Column Mover */}
+                                  <select
+                                    value={col.id}
+                                    onChange={(e) => handleMoveTask(item.id, e.target.value)}
+                                    className="bg-slate-50 border border-slate-200 text-slate-600 rounded px-1.5 py-0.5 text-[11px] focus:outline-none"
+                                    title="Move task to another column"
+                                  >
+                                    {columnOrder.map((c) => (
+                                      <option key={c.id} value={c.id}>Move: {c.name}</option>
+                                    ))}
+                                  </select>
+                                </div>
                                 <div className="w-6 h-6 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center font-bold text-[10px]">
                                   T{item.id}
                                 </div>
