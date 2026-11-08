@@ -11,6 +11,7 @@ const setupChatSocket = require('./sockets/chatSocket');
 const authRoutes = require('./routes/auth');
 const orgRoutes = require('./routes/orgs');
 const taskRoutes = require('./routes/tasks');
+const chatRoutes = require('./routes/chat');
 
 const app = express();
 const server = http.createServer(app);
@@ -53,6 +54,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/orgs', orgRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {
