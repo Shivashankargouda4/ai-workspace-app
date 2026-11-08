@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Viva Voce Presentation - Shivashankargoud B R (KUB25MCA019)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .slide-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      position: relative;
+    }
+    .slide {
+      display: none;
+      width: 100%;
+      max-width: 1100px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 20px;
+      padding: 48px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    .slide.active { display: block; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    h1 { font-size: 2.2rem; color: #38bdf8; margin-bottom: 12px; line-height: 1.2; }
+    h2 { font-size: 1.6rem; color: #38bdf8; margin-bottom: 24px; border-bottom: 2px solid #334155; padding-bottom: 12px; }
+    h3 { font-size: 1.2rem; color: #94a3b8; margin-top: 16px; margin-bottom: 8px; }
+    p { font-size: 1.1rem; line-height: 1.6; color: #cbd5e1; margin-bottom: 16px; }
+    ul { list-style: none; margin-bottom: 20px; }
+    li { font-size: 1.1rem; line-height: 1.7; color: #e2e8f0; margin-bottom: 10px; position: relative; padding-left: 28px; }
+    li::before { content: "▸"; position: absolute; left: 0; color: #38bdf8; font-weight: bold; font-size: 1.3rem; }
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 6px; font-weight: 600; font-size: 0.85rem; margin-right: 8px; }
+    .badge-blue { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid #38bdf8; }
+    .badge-green { background: rgba(52, 211, 153, 0.2); color: #34d399; border: 1px solid #34d399; }
+    .badge-amber { background: rgba(251, 191, 36, 0.2); color: #fbbf24; border: 1px solid #fbbf24; }
+    .badge-red { background: rgba(248, 113, 113, 0.2); color: #f87171; border: 1px solid #f87171; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 1rem; }
+    th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #334155; }
+    th { background: #0f172a; color: #38bdf8; font-weight: 600; }
+    tr:hover { background: #243247; }
+    .footer-bar {
+      height: 60px;
+      background: #090d16;
+      border-top: 1px solid #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+    }
+    .controls { display: flex; gap: 12px; }
+    button {
+      background: #1e293b;
+      border: 1px solid #475569;
+      color: #f8fafc;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    button:hover { background: #334155; border-color: #38bdf8; }
+    .speaker-notes {
+      margin-top: 20px;
+      background: #0f172a;
+      border-left: 4px solid #38bdf8;
+      padding: 16px;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      color: #94a3b8;
+    }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  </style>
+</head>
+<body>
+
+  <div class="slide-container">
+
+    <!-- Slide 1: Title -->
+    <div class="slide active">
+      <div style="text-align: center; padding: 40px 0;">
+        <span class="badge badge-blue">MCA Major Project (2026)</span>
+        <h1 style="font-size: 2.8rem; margin: 24px 0 16px 0;">AI-Powered Real-Time Collaborative Workspace with Predictive Analytics</h1>
+        <p style="font-size: 1.3rem; color: #94a3b8; max-width: 800px; margin: 0 auto 36px auto;">
+          A full-stack collaborative platform integrating WebSocket communication with machine learning task delay risk forecasting and generative meeting assistance.
+        </p>
+        <div style="background: #0f172a; display: inline-block; padding: 20px 40px; border-radius: 12px; border: 1px solid #334155; text-align: left;">
+          <p style="margin-bottom: 6px;"><strong>Candidate:</strong> Shivashankargoud B R</p>
+          <p style="margin-bottom: 6px;"><strong>Register Number:</strong> KUB25MCA019</p>
+          <p style="margin-bottom: 6px;"><strong>Department:</strong> Department of Computer Applications</p>
+          <p style="margin-bottom: 0;"><strong>Institution:</strong> Kishkindha University</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 2: Problem Statement -->
+    <div class="slide">
+      <h2>1. Problem Statement & Motivation</h2>
+      <div class="grid-2">
+        <div>
+          <h3>The Industry Problem</h3>
+          <ul>
+            <li><strong>Reactive Tracking:</strong> Tools like Jira and Trello notify managers only <em>after</em> a deadline is breached.</li>
+            <li><strong>Siloed Tools:</strong> Teams switch between Slack (chat), Trello (cards), and Google Meet, losing context.</li>
+            <li><strong>Multi-Tenant Leaks:</strong> Cloud workspace platforms frequently risk cross-tenant data leakage if access controls are not verified on every SQL query.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Proposed Solution</h3>
+          <ul>
+            <li><strong>Proactive AI Forecasting:</strong> Captures velocity snapshots at mid-sprint and calculates delay probability.</li>
+            <li><strong>Integrated Real-Time Chat:</strong> Room-level WebSocket multicast with persist-then-broadcast guarantee.</li>
+            <li><strong>Strict Multi-Tenant RBAC:</strong> Hard tenant isolation enforced at both the database and middleware layers.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="speaker-notes">
+        <strong>Spoken Script:</strong> "Traditional project trackers are retrospective. Our innovation introduces proactive risk forecasting into standard Kanban boards so project managers receive early warnings before deadlines slip."
+      </div>
+    </div>
+
+    <!-- Slide 3: Objectives & Scope -->
+    <div class="slide">
+      <h2>2. Project Objectives & System Scope</h2>
+      <ul>
+        <li><strong>Multi-Tenancy & RBAC:</strong> Partition organizations, workspaces, and projects with roles (Admin, Manager, Member) and single-use cryptographic invitations.</li>
+        <li><strong>Interactive Kanban Auditing:</strong> Drag-and-drop task lifecycle management with state transitions logged to <code>task_status_history</code>.</li>
+        <li><strong>Machine Learning Microservice:</strong> FastAPI service returning delay probabilities ($p \ge 0.70 \rightarrow \text{High Risk}$) and continuous scores.</li>
+        <li><strong>Generative AI Assistant:</strong> Meeting notes summarization and structured action item extraction via Gemini API.</li>
+        <li><strong>Installable Android PWA:</strong> Progressive Web App with app-shell caching, standalone display mode, and touch-friendly controls.</li>
+      </ul>
+      <div class="speaker-notes">
+        <strong>Key Note:</strong> "All core modules were built in a 4-week solo development plan, with collaborative rich-text document editing explicitly deferred as future scope."
+      </div>
+    </div>
+
+    <!-- Slide 4: System Architecture -->
+    <div class="slide">
+      <h2>3. Multi-Tier Microservices Architecture</h2>
+      <div class="grid-2">
+        <div>
+          <h3>Frontend Presentation Layer</h3>
+          <ul>
+            <li>React 18 SPA bundled with Vite</li>
+            <li>Tailwind CSS & Lucide React Icons</li>
+            <li>Progressive Web App (PWA) with <code>sw.js</code></li>
+            <li>Recharts SVG Visual Analytics</li>
+          </ul>
+          <h3>Application Server Layer</h3>
+          <ul>
+            <li>Express.js REST API (Node.js LTS)</li>
+            <li>Socket.IO bidirectional room multicast</li>
+            <li>JWT Access Tokens (15 min) + httpOnly Cookies</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Machine Learning Microservice</h3>
+          <ul>
+            <li>Python 3.12 + FastAPI (Port 8000)</li>
+            <li>scikit-learn Pipeline (OneHotEncoder + StandardScaler)</li>
+            <li>Joblib serialized model artifacts</li>
+          </ul>
+          <h3>Database & Storage Layer</h3>
+          <ul>
+            <li>PostgreSQL 18 (16 normalized tables)</li>
+            <li>Audit history: <code>task_status_history</code></li>
+            <li>Single-origin static bundle serving</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 5: Machine Learning Methodology -->
+    <div class="slide">
+      <h2>4. Machine Learning: 5-Fold Cross-Validation</h2>
+      <p>Trained on a 3,000-record synthetic dataset (80% train, 20% test stratified split):</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Model Evaluation Metric</th>
+            <th>Logistic Regression (Baseline)</th>
+            <th>Random Forest (Primary)</th>
+            <th>Academic Interpretation</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>5-Fold CV Accuracy</strong></td>
+            <td><strong>90.17% (±0.97%)</strong></td>
+            <td>89.03% (±1.03%)</td>
+            <td>Baseline fit slightly better due to linear synthetic generation.</td>
+          </tr>
+          <tr>
+            <td><strong>5-Fold CV ROC-AUC</strong></td>
+            <td><strong>0.9662</strong></td>
+            <td>0.9564</td>
+            <td>Both models cleanly separate delayed vs on-time tasks.</td>
+          </tr>
+          <tr>
+            <td><strong>Majority-Class Baseline</strong></td>
+            <td>67.17%</td>
+            <td>67.17%</td>
+            <td>Both models comfortably beat the 67% naive guessing baseline.</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="speaker-notes">
+        <strong>Viva Defense Q1:</strong> "On synthetic data, Logistic Regression slightly outperformed Random Forest. I retained Random Forest because it is architecturally prepared for non-linear interactions in real software team data and outputs feature importance rankings."
+      </div>
+    </div>
+
+    <!-- Slide 6: Feature Importance -->
+    <div class="slide">
+      <h2>5. Feature Importance Rankings (Random Forest)</h2>
+      <div class="grid-2">
+        <div>
+          <table>
+            <thead>
+              <tr><th>Predictive Feature</th><th>Weight</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>midpoint_progress</code></td><td><strong>38.96%</strong></td></tr>
+              <tr><td><code>complexity</code></td><td><strong>27.45%</strong></td></tr>
+              <tr><td><code>assignee_workload</code></td><td><strong>12.02%</strong></td></tr>
+              <tr><td><code>previous_delays_ratio</code></td><td><strong>10.54%</strong></td></tr>
+              <tr><td><code>estimated_days</code></td><td>4.65%</td></tr>
+              <tr><td><code>team_size</code></td><td>2.95%</td></tr>
+              <tr><td><code>priority_low / medium</code></td><td>3.43%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <h3>Academic Caveat</h3>
+          <p>
+            <em>"Feature importance reflects the synthetic generation rules, rather than proven real-world project dynamics."</em>
+          </p>
+          <p>
+            In our generation formula, midpoint progress and task complexity were weighted heavily. Random Forest successfully learned these underlying generation rules as expected.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 7: Database & Multi-Tenant Isolation -->
+    <div class="slide">
+      <h2>6. Database Design & Multi-Tenant Isolation</h2>
+      <ul>
+        <li><strong>16 Relational Tables:</strong> Enforce strict foreign key referential integrity in PostgreSQL 18.</li>
+        <li><strong>Audit Trail:</strong> Every Kanban status transition appends an immutable row to <code>task_status_history</code> capturing old status, new status, progress, actor, and UTC timestamp.</li>
+        <li><strong>Real Isolation Protection:</strong> Foreign keys keep data consistent, but true isolation is enforced by every query filtering by <code>org_id</code> and the <code>requireRole</code> middleware checking active membership before execution.</li>
+        <li><strong>10 Multi-Tenancy Tests:</strong> Proved that cross-tenant requests consistently return <code>HTTP 403 Forbidden</code>.</li>
+      </ul>
+      <div class="speaker-notes">
+        <strong>Viva Defense Q3:</strong> "Foreign keys keep data consistent, but they do NOT isolate tenants. True isolation is enforced by application-level query filtering on org_id and requireRole checking organization_members."
+      </div>
+    </div>
+
+    <!-- Slide 8: Real-Time Chat & AI Assistant -->
+    <div class="slide">
+      <h2>7. Real-Time Chat & AI Assistant</h2>
+      <div class="grid-2">
+        <div>
+          <h3>Socket.IO Chat Engine</h3>
+          <ul>
+            <li><strong>Persist-Then-Broadcast:</strong> Messages are committed to PostgreSQL <code>messages</code> before emitting to room peers.</li>
+            <li><strong>Reconnection Resilience:</strong> On drop/reconnect, clients fetch message history from database via REST API.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Generative AI Assistant</h3>
+          <ul>
+            <li><strong>Summarizer:</strong> Transforms meeting discussions into 3-point executive summaries via Gemini API.</li>
+            <li><strong>Action Extractor:</strong> Parses text into structured JSON tasks with assignees and estimated days.</li>
+            <li><strong>Deterministic Fallback:</strong> Local NLP engine ensures offline reliability.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 9: Android PWA & Mobile View -->
+    <div class="slide">
+      <h2>8. Installable Android Progressive Web App</h2>
+      <ul>
+        <li><strong>App Shell Caching:</strong> Service Worker (<code>sw.js</code>) caches HTML, CSS, JS, and icons for offline resilience.</li>
+        <li><strong>Zero API Caching:</strong> All <code>/api/</code> calls bypass the cache to prevent data leakage between tenants.</li>
+        <li><strong>Installed on Physical Android:</strong> Verified via Cloudflare Tunnel over HTTPS on a real Android phone in standalone display mode.</li>
+        <li><strong>Touch-Friendly Controls:</strong> Each Kanban card features a 1-tap column selector alongside desktop drag-and-drop.</li>
+        <li><strong>Zero Horizontal Overflow:</strong> Navigation automatically moves to an Android bottom bar at 390px mobile viewport.</li>
+      </ul>
+    </div>
+
+    <!-- Slide 10: Conclusion & Defense -->
+    <div class="slide">
+      <h2>9. Conclusion & Verification Summary</h2>
+      <ul>
+        <li><strong>31 Automated Tests Passed (100%):</strong> Auth (6), Multi-tenancy (10), AI (4), Analytics (5), Files (4), ML (2).</li>
+        <li><strong>Real Terminal Evidence:</strong> All unit and integration test outputs verified in terminal with exit code 0.</li>
+        <li><strong>Verified On Physical Hardware:</strong> Tested on Google Chrome and installed as a PWA on an Android phone over HTTPS.</li>
+        <li><strong>Future Work:</strong> Pilot testing with commercial engineering teams, automated RAG semantic file search, and native Android APK compilation.</li>
+      </ul>
+      <div style="text-align: center; margin-top: 36px;">
+        <h3 style="color: #38bdf8; font-size: 1.5rem;">Thank You! Questions & Live Demonstration</h3>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer Navigation Bar -->
+  <div class="footer-bar">
+    <div style="font-size: 0.95rem; color: #64748b;">
+      <span id="slide-num">Slide 1 of 10</span> | Shivashankargoud B R (KUB25MCA019) - Kishkindha University
+    </div>
+    <div class="controls">
+      <button onclick="prevSlide()">❮ Previous</button>
+      <button onclick="nextSlide()">Next ❯</button>
+      <button onclick="toggleNotes()">Speaker Notes</button>
+      <button onclick="toggleFullscreen()">Full Screen (F11)</button>
+    </div>
+  </div>
+
+  <script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const slideNum = document.getElementById('slide-num');
+
+    function showSlide(index) {
+      slides.forEach((s, i) => {
+        s.classList.toggle('active', i === index);
+      });
+      slideNum.textContent = `Slide ${index + 1} of ${slides.length}`;
+    }
+
+    function nextSlide() {
+      if (currentSlide < slides.length - 1) {
+        currentSlide++;
+        showSlide(currentSlide);
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        currentSlide--;
+        showSlide(currentSlide);
+      }
+    }
+
+    function toggleNotes() {
+      const notes = document.querySelectorAll('.speaker-notes');
+      notes.forEach(n => {
+        n.style.display = (n.style.display === 'none' ? 'block' : 'none');
+      });
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') nextSlide();
+      if (e.key === 'ArrowLeft' || e.key === 'PageUp') prevSlide();
+      if (e.key === 'n' || e.key === 'N') toggleNotes();
+    });
+  </script>
+</body>
+</html>
