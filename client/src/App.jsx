@@ -28,7 +28,7 @@ function ProtectedLayout() {
       <Navbar />
       <div className="flex flex-1">
         <Sidebar />
-        <main className="flex-1 p-6 md:p-8 max-w-7xl mx-auto w-full">
+        <main className="flex-1 p-3 sm:p-6 md:p-8 pb-20 md:pb-8 max-w-7xl mx-auto w-full min-w-0">
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/kanban" element={<Kanban />} />

@@ -138,8 +138,8 @@ export default function Chat() {
 
   return (
     <div className="h-[calc(100vh-8rem)] bg-white rounded-xl border border-slate-200 shadow-sm flex overflow-hidden">
-      {/* Channels Sidebar */}
-      <div className="w-64 border-r border-slate-200 bg-slate-50 flex flex-col">
+      {/* Channels Sidebar (Desktop) */}
+      <div className="hidden md:flex w-64 border-r border-slate-200 bg-slate-50 flex-col shrink-0">
         <div className="p-4 border-b border-slate-200">
           <h3 className="font-semibold text-slate-800 text-sm">Channels & Rooms</h3>
         </div>
@@ -161,16 +161,26 @@ export default function Chat() {
       </div>
 
       {/* Chat Messages Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <div className="h-14 border-b border-slate-200 px-6 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Hash className="w-5 h-5 text-slate-500" />
-            <span className="font-semibold text-slate-800 text-sm">{currentChannelName}</span>
+        <div className="h-14 border-b border-slate-200 px-3 sm:px-6 flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <Hash className="w-5 h-5 text-slate-500 shrink-0" />
+            <select
+              value={currentChannelId}
+              onChange={(e) => setCurrentChannelId(Number(e.target.value))}
+              aria-label="Select channel"
+              className="md:hidden text-sm font-semibold text-slate-800 bg-slate-100 py-1 px-2 rounded border border-slate-200 focus:outline-none"
+            >
+              {channels.map((ch) => (
+                <option key={ch.id} value={ch.id}>#{ch.name}</option>
+              ))}
+            </select>
+            <span className="hidden md:inline font-semibold text-slate-800 text-sm">{currentChannelName}</span>
           </div>
-          <span className={`text-xs font-medium flex items-center gap-1.5 ${connected ? 'text-emerald-600' : 'text-slate-400'}`}>
+          <span className={`text-[11px] sm:text-xs font-medium flex items-center gap-1.5 ${connected ? 'text-emerald-600' : 'text-slate-400'}`}>
             <span className={`w-2 h-2 rounded-full ${connected ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`}></span>
-            {connected ? 'Live Connected (Socket.IO)' : 'Connecting...'}
+            {connected ? 'Live' : 'Connecting...'}
           </span>
         </div>
 
