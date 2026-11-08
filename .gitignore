@@ -29,6 +29,10 @@ yarn-debug.log*
 yarn-error.log*
 *.log
 
+# Uploaded files
+server/uploads/
+uploads/
+
 # OS & IDE
 .DS_Store
 Thumbs.db
