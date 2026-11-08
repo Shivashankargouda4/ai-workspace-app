@@ -1,5 +1,7 @@
-import React from 'react';
-import { CheckCircle2, Clock, AlertTriangle, Users, TrendingUp } from 'lucide-react';
+import React, { useState } from 'react';
+import { CheckCircle2, Clock, AlertTriangle, Users, TrendingUp, Sparkles, Send, Check } from 'lucide-react';
+import api from '../api/client';
+import toast from 'react-hot-toast';
 
 export default function Dashboard() {
   const stats = [
@@ -8,6 +10,46 @@ export default function Dashboard() {
     { title: 'Delay Risk (High)', value: '3', icon: AlertTriangle, color: 'text-rose-600', bg: 'bg-rose-50' },
     { title: 'Active Members', value: '8', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
   ];
+
+  const [aiInput, setAiInput] = useState('');
+  const [aiOutput, setAiOutput] = useState(null);
+  const [loadingAi, setLoadingAi] = useState(false);
+
+  const handleSummarize = async () => {
+    if (!aiInput.trim()) {
+      toast.error('Please enter notes or text to summarize.');
+      return;
+    }
+    setLoadingAi(true);
+    setAiOutput(null);
+    try {
+      const res = await api.post('/ai/summarize', { text: aiInput });
+      setAiOutput({ type: 'summary', content: res.data.summary, source: res.data.source });
+      toast.success('Summary generated successfully!');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to summarize.');
+    } finally {
+      setLoadingAi(false);
+    }
+  };
+
+  const handleExtractActionItems = async () => {
+    if (!aiInput.trim()) {
+      toast.error('Please enter text to extract action items.');
+      return;
+    }
+    setLoadingAi(true);
+    setAiOutput(null);
+    try {
+      const res = await api.post('/ai/action-items', { text: aiInput });
+      setAiOutput({ type: 'action_items', items: res.data.action_items, source: res.data.source });
+      toast.success('Action items extracted!');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to extract items.');
+    } finally {
+      setLoadingAi(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -47,6 +89,75 @@ export default function Dashboard() {
         <p className="text-sm text-slate-300 max-w-2xl">
           The Random Forest delay prediction model actively analyzes historical midpoint progress, task complexity, and team workload to proactively highlight at-risk deadlines before they slip.
         </p>
+      </div>
+
+      {/* AI Assistant Section */}
+      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-4">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-indigo-600" />
+          <h3 className="font-semibold text-slate-800 text-base">AI Assistant (Document Summarizer & Action Item Extractor)</h3>
+        </div>
+        <p className="text-xs text-slate-500">
+          Enter meeting notes, sprint updates, or chat messages. The AI service will generate concise executive summaries and extract structured task action items.
+        </p>
+
+        <textarea
+          rows={3}
+          value={aiInput}
+          onChange={(e) => setAiInput(e.target.value)}
+          placeholder="Paste meeting discussion notes or project updates here..."
+          className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+        />
+
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={handleSummarize}
+            disabled={loadingAi}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition shadow-sm disabled:opacity-50"
+          >
+            <Sparkles className="w-4 h-4" /> Summarize Text
+          </button>
+          <button
+            onClick={handleExtractActionItems}
+            disabled={loadingAi}
+            className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-sm font-medium transition shadow-sm disabled:opacity-50"
+          >
+            <CheckCircle2 className="w-4 h-4" /> Extract Action Items
+          </button>
+        </div>
+
+        {loadingAi && (
+          <div className="p-4 bg-slate-50 rounded-lg text-sm text-slate-500 animate-pulse flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-indigo-600 animate-ping"></span> AI is analyzing your content...
+          </div>
+        )}
+
+        {aiOutput && (
+          <div className="p-4 bg-indigo-50/70 border border-indigo-100 rounded-lg mt-3 space-y-2">
+            <div className="flex items-center justify-between text-xs font-semibold text-indigo-700">
+              <span>{aiOutput.type === 'summary' ? '📄 AI Executive Summary' : '📋 Extracted Action Items'}</span>
+              <span className="text-[10px] bg-white px-2 py-0.5 rounded border border-indigo-200">{aiOutput.source}</span>
+            </div>
+
+            {aiOutput.type === 'summary' ? (
+              <p className="text-sm text-slate-800 whitespace-pre-line leading-relaxed">{aiOutput.content}</p>
+            ) : (
+              <div className="space-y-1.5 mt-2">
+                {aiOutput.items.map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between bg-white p-2.5 rounded border border-indigo-100 text-sm">
+                    <span className="font-medium text-slate-800">• {item.title}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-500">{item.estimated_days}d est</span>
+                      <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${item.priority === 'high' ? 'bg-red-100 text-red-700' : (item.priority === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700')}`}>
+                        {item.priority}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Recent Activity Table */}
