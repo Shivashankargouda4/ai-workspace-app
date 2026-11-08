@@ -175,18 +175,19 @@ async function seedDemo() {
       );
 
       // Task prediction
+      await client.query(`DELETE FROM task_predictions WHERE task_id = $1`, [t.id]);
       await client.query(
         `INSERT INTO task_predictions (task_id, delay_probability, risk_level, model_version)
-         VALUES ($1, $2, $3, 'rf-v1.0')
-         ON CONFLICT DO NOTHING`,
+         VALUES ($1, $2, $3, 'rf-v1.0')`,
         [t.id, t.prob, t.risk]
       );
 
       // Audit history
+      await client.query(`DELETE FROM task_status_history WHERE task_id = $1`, [t.id]);
       await client.query(
-        `INSERT INTO task_status_history (task_id, old_status, new_status, changed_by)
-         VALUES ($1, 'todo', $2, 1)`,
-        [t.id, t.status]
+        `INSERT INTO task_status_history (task_id, old_status, new_status, old_progress, new_progress, changed_by)
+         VALUES ($1, 'todo', $2, 0, $3, 1)`,
+        [t.id, t.status, t.progress]
       );
     }
     await client.query(`SELECT setval('tasks_id_seq', (SELECT MAX(id) FROM tasks));`);
