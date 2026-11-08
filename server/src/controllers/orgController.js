@@ -1,4 +1,5 @@
 const { z } = require('zod');
+const crypto = require('crypto');
 const db = require('../config/db');
 
 const createOrgSchema = z.object({
@@ -9,6 +10,15 @@ const createOrgSchema = z.object({
 const createWorkspaceSchema = z.object({
   name: z.string().min(2, 'Workspace name must be at least 2 characters'),
   description: z.string().optional(),
+});
+
+const createDepartmentSchema = z.object({
+  name: z.string().min(2, 'Department name must be at least 2 characters'),
+});
+
+const inviteMemberSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  role: z.enum(['admin', 'manager', 'member']).default('member'),
 });
 
 // List organizations user belongs to
@@ -102,7 +112,7 @@ const createOrg = async (req, res) => {
   }
 };
 
-// Get organization details with members & workspaces
+// Get organization details with members, workspaces, and departments
 const getOrgDetails = async (req, res) => {
   try {
     const orgId = req.params.orgId;
@@ -126,10 +136,16 @@ const getOrgDetails = async (req, res) => {
       [orgId]
     );
 
+    const deptRes = await db.query(
+      `SELECT * FROM departments WHERE org_id = $1 ORDER BY name ASC`,
+      [orgId]
+    );
+
     res.json({
       organization: orgRes.rows[0],
       members: membersRes.rows,
       workspaces: workspacesRes.rows,
+      departments: deptRes.rows,
       currentUserRole: req.userOrgRole,
     });
   } catch (error) {
@@ -138,7 +154,33 @@ const getOrgDetails = async (req, res) => {
   }
 };
 
-// Create workspace in organization
+// Create department under organization (Admin only)
+const createDepartment = async (req, res) => {
+  try {
+    const orgId = req.params.orgId;
+    const validatedData = createDepartmentSchema.parse(req.body);
+
+    const result = await db.query(
+      `INSERT INTO departments (org_id, name)
+       VALUES ($1, $2)
+       RETURNING *`,
+      [orgId, validatedData.name]
+    );
+
+    res.status(201).json({
+      message: 'Department created successfully',
+      department: result.rows[0],
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors[0].message });
+    }
+    console.error('Create department error:', error);
+    res.status(500).json({ error: 'Failed to create department.' });
+  }
+};
+
+// Create workspace in organization (Manager or Admin)
 const createWorkspace = async (req, res) => {
   try {
     const orgId = req.params.orgId;
@@ -179,9 +221,105 @@ const createWorkspace = async (req, res) => {
   }
 };
 
+// Create invitation link with cryptographic token
+const createInvitation = async (req, res) => {
+  try {
+    const orgId = req.params.orgId;
+    const validatedData = inviteMemberSchema.parse(req.body);
+
+    // Generate random secure token
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+    const result = await db.query(
+      `INSERT INTO invitations (org_id, email, role, token, expires_at, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, org_id, email, role, token, expires_at, created_at`,
+      [orgId, validatedData.email, validatedData.role, token, expiresAt, req.user.id]
+    );
+
+    const invite = result.rows[0];
+
+    res.status(201).json({
+      message: 'Invitation link generated successfully',
+      invitation: invite,
+      inviteLink: `/invite/${token}`,
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors[0].message });
+    }
+    console.error('Create invitation error:', error);
+    res.status(500).json({ error: 'Failed to create invitation.' });
+  }
+};
+
+// Accept an invitation link
+const acceptInvitation = async (req, res) => {
+  const client = await db.pool.connect();
+  try {
+    const token = req.params.token;
+
+    await client.query('BEGIN');
+
+    const invRes = await client.query(
+      'SELECT * FROM invitations WHERE token = $1',
+      [token]
+    );
+
+    if (invRes.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Invalid invitation link.' });
+    }
+
+    const invitation = invRes.rows[0];
+
+    if (invitation.accepted_at) {
+      await client.query('ROLLBACK');
+      return res.status(410).json({ error: 'This invitation has already been accepted.' });
+    }
+
+    if (new Date() > new Date(invitation.expires_at)) {
+      await client.query('ROLLBACK');
+      return res.status(410).json({ error: 'This invitation has expired.' });
+    }
+
+    // Add user to organization members
+    await client.query(
+      `INSERT INTO organization_members (org_id, user_id, role)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (org_id, user_id) DO UPDATE SET role = EXCLUDED.role`,
+      [invitation.org_id, req.user.id, invitation.role]
+    );
+
+    // Mark invitation as accepted
+    await client.query(
+      'UPDATE invitations SET accepted_at = CURRENT_TIMESTAMP WHERE id = $1',
+      [invitation.id]
+    );
+
+    await client.query('COMMIT');
+
+    res.json({
+      message: 'Invitation accepted successfully! You have joined the organization.',
+      orgId: invitation.org_id,
+      role: invitation.role,
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Accept invitation error:', error);
+    res.status(500).json({ error: 'Failed to accept invitation.' });
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
   getMyOrgs,
   createOrg,
   getOrgDetails,
+  createDepartment,
   createWorkspace,
+  createInvitation,
+  acceptInvitation,
 };
