@@ -160,6 +160,45 @@ const updateTaskStatus = async (req, res) => {
       );
     }
 
+    // Call ML Microservice to forecast delay risk and persist in task_predictions
+    try {
+      const mlUrl = process.env.ML_SERVICE_URL || 'http://localhost:8000';
+      const mlResponse = await fetch(`${mlUrl}/predict`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          priority: updatedTask.priority || 'medium',
+          complexity: updatedTask.complexity || 3,
+          estimated_days: updatedTask.estimated_days || 3,
+          team_size: 2,
+          assignee_workload: 3,
+          previous_delays_ratio: 0.2,
+          midpoint_progress: newProgress,
+        }),
+      });
+
+      if (mlResponse.ok) {
+        const mlData = await mlResponse.json();
+        const existingPred = await client.query('SELECT id FROM task_predictions WHERE task_id = $1', [taskId]);
+        if (existingPred.rows.length > 0) {
+          await client.query(
+            `UPDATE task_predictions 
+             SET delay_probability = $1, risk_level = $2, model_version = $3, predicted_at = CURRENT_TIMESTAMP
+             WHERE task_id = $4`,
+            [mlData.delay_probability, mlData.risk_level, mlData.model_version, taskId]
+          );
+        } else {
+          await client.query(
+            `INSERT INTO task_predictions (task_id, delay_probability, risk_level, model_version)
+             VALUES ($1, $2, $3, $4)`,
+            [taskId, mlData.delay_probability, mlData.risk_level, mlData.model_version]
+          );
+        }
+      }
+    } catch (mlErr) {
+      // Optional fallback if ML service is offline
+    }
+
     await client.query('COMMIT');
 
     res.json({
