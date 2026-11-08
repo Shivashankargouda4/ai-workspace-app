@@ -59,7 +59,11 @@ export default function Chat() {
     const token = localStorage.getItem('accessToken');
     if (!token) return;
 
-    const socket = io('http://localhost:5000', {
+    const socketUrl = window.location.hostname === 'localhost' && window.location.port === '5173'
+      ? 'http://localhost:5000'
+      : window.location.origin;
+
+    const socket = io(socketUrl, {
       auth: { token },
       transports: ['websocket', 'polling'],
     });

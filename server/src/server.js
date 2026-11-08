@@ -25,7 +25,7 @@ const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
 // Socket.IO Setup
 const io = new Server(server, {
   cors: {
-    origin: CLIENT_URL,
+    origin: (origin, callback) => callback(null, true),
     credentials: true,
   },
 });
@@ -34,11 +34,11 @@ setupChatSocket(io);
 // Make io accessible in requests if needed
 app.set('io', io);
 
-// Security & Utility Middlewares
-app.use(helmet());
+// Security & Utility Middlewares (permissive CSP for tunnel & PWA assets)
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(
   cors({
-    origin: CLIENT_URL,
+    origin: (origin, callback) => callback(null, true),
     credentials: true,
   })
 );
