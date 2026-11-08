@@ -60,6 +60,14 @@ export default function Kanban() {
     const { source, destination, draggableId } = result;
     if (source.droppableId === destination.droppableId && source.index === destination.index) return;
 
+    // Snapshot previous state for reliable rollback on network/auth failure
+    const previousColumns = {
+      todo: [...columns.todo],
+      in_progress: [...columns.in_progress],
+      review: [...columns.review],
+      done: [...columns.done],
+    };
+
     // Optimistically update UI
     const sourceCol = [...columns[source.droppableId]];
     const destCol = source.droppableId === destination.droppableId ? sourceCol : [...columns[destination.droppableId]];
@@ -77,10 +85,11 @@ export default function Kanban() {
       await api.patch(`/tasks/${draggableId}/status`, {
         status: destination.droppableId,
       });
-      toast.success(`Task moved to ${destination.droppableId} (Logged in task_status_history)`);
+      toast.success(`Task moved to ${destination.droppableId}`);
     } catch (err) {
-      toast.error('Failed to persist task status to database.');
-      fetchTasks(); // Rollback on error
+      console.error('Kanban drag error:', err);
+      toast.error(err.response?.data?.error || 'Failed to persist task status to database.');
+      setColumns(previousColumns); // Rollback card on failure
     }
   };
 

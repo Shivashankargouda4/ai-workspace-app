@@ -22,7 +22,11 @@ function ProtectedLayout() {
     );
   }
 
-  // Allow preview/demo view even if not authenticated yet
+  // Strict route protection: unauthenticated users MUST log in first
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       <Navbar />
