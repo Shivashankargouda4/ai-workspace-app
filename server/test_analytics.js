@@ -32,22 +32,22 @@ async function runAnalyticsTests() {
       console.log('   ❌ FAILED: Unexpected status code:', unauth.status);
     }
 
-    // 2. Login with Alice (Org 1 Admin)
-    console.log('2. Authenticating Alice (alice@example.com)...');
+    // 2. Login with Org 1 Member (admin@workspace.local or rahul@workspace.local)
+    console.log('2. Authenticating Org 1 Member (admin@workspace.local)...');
     let login = await req('POST', '/auth/login', {
-      email: 'alice@example.com',
+      email: 'admin@workspace.local',
       password: 'password123',
     });
     if (login.status !== 200) {
-      // Fallback to test user if needed
+      // Try rahul@workspace.local
       login = await req('POST', '/auth/login', {
-        email: 'test@example.com',
-        password: 'Test@12345',
+        email: 'rahul@workspace.local',
+        password: 'password123',
       });
     }
     if (login.status !== 200) throw new Error('Login failed: ' + JSON.stringify(login.data));
     const token = login.data.accessToken;
-    console.log('   ✅ Authenticated successfully.\n');
+    console.log('   ✅ Authenticated successfully as Org 1 member.\n');
 
     // 3. Fetch analytics overview
     console.log('3. Requesting GET /api/analytics/overview/1...');
