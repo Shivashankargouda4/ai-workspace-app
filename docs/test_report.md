@@ -25,13 +25,13 @@ This report contains only the tests that have been written, automated, and execu
 
 | Test File | Target Module | Executable Assertions | Verified Terminal Exit Code | Status |
 | :--- | :--- | :---: | :---: | :---: |
-| [`test_auth.js`](file:///C:/Users/brshi/OneDrive/Desktop/shivu/workspace-app/server/test_auth.js) | Authentication & Tokens | 4 | Code 0 | **VERIFIED** |
-| [`test_multitenancy.js`](file:///C:/Users/brshi/OneDrive/Desktop/shivu/workspace-app/server/test_multitenancy.js) | Tenant Isolation & RBAC | 9 | Code 0 | **VERIFIED** |
-| [`test_ai.js`](file:///C:/Users/brshi/OneDrive/Desktop/shivu/workspace-app/server/test_ai.js) | AI Assistant & NLP | 3 | Code 0 | **VERIFIED** |
-| [`test_analytics.js`](file:///C:/Users/brshi/OneDrive/Desktop/shivu/workspace-app/server/test_analytics.js) | SQL Aggregation & Metrics | 5 | Code 0 | **VERIFIED** |
-| [`test_files.js`](file:///C:/Users/brshi/OneDrive/Desktop/shivu/workspace-app/server/test_files.js) | Secure File Repository | 4 | Code 0 | **VERIFIED** |
-| [`test_predict.py`](file:///C:/Users/brshi/OneDrive/Desktop/shivu/workspace-app/ml-service/test_predict.py) | ML Delay Risk Classifier | 2 | Code 0 | **VERIFIED** |
-| **Total Verified** | | **27 Checks** | **Zero Failures** | **100% PASS** |
+| [`test_auth.js`](file:///C:/Users/brshi/OneDrive/Desktop/shivu/workspace-app/server/test_auth.js) | Authentication & Tokens | 6 | Code 0 | **VERIFIED (PASS)** |
+| [`test_multitenancy.js`](file:///C:/Users/brshi/OneDrive/Desktop/shivu/workspace-app/server/test_multitenancy.js) | Tenant Isolation & RBAC | 10 | Code 0 | **VERIFIED (PASS)** |
+| [`test_ai.js`](file:///C:/Users/brshi/OneDrive/Desktop/shivu/workspace-app/server/test_ai.js) | AI Assistant & NLP | 4 | Code 0 | **VERIFIED (PASS)** |
+| [`test_analytics.js`](file:///C:/Users/brshi/OneDrive/Desktop/shivu/workspace-app/server/test_analytics.js) | SQL Aggregation & Metrics | 5 | Code 0 | **VERIFIED (PASS)** |
+| [`test_files.js`](file:///C:/Users/brshi/OneDrive/Desktop/shivu/workspace-app/server/test_files.js) | Secure File Repository | 4 | Code 0 | **VERIFIED (PASS)** |
+| [`test_predict.py`](file:///C:/Users/brshi/OneDrive/Desktop/shivu/workspace-app/ml-service/test_predict.py) | ML Delay Risk Classifier | 2 | Code 0 | **VERIFIED (PASS)** |
+| **Total Verified** | | **31 Checks** | **Zero Failures** | **100% PASS** |
 
 ---
 
@@ -42,6 +42,8 @@ This report contains only the tests that have been written, automated, and execu
 - **Assertion 1.2 (Login):** `assert(res.status === 200 && res.data.accessToken)` -> Verifies that bcrypt successfully validates the submitted password against the stored salt hash.
 - **Assertion 1.3 (Security Reject):** `assert(res.status === 401)` -> Verifies that submitting an incorrect password blocks entry with HTTP 401 Unauthorized.
 - **Assertion 1.4 (Duplicate Prevention):** `assert(res.status === 409)` -> Verifies that attempting to register an existing email is rejected with HTTP 409 Conflict.
+- **Assertion 1.5 (Profile Fetch):** `assert(res.status === 200 && res.data.user.email)` -> Verifies authenticated profile retrieval via bearer token.
+- **Assertion 1.6 (Missing Token Guard):** `assert(res.status === 401)` -> Verifies that omitting the Authorization header blocks protected endpoints.
 
 ### Test Suite 2: Multi-Tenancy & RBAC (`server/test_multitenancy.js`)
 - **Assertion 2.1 & 2.2 (Independent Tenant Creation):** User A creates Org A (ID: 2); User B creates Org B (ID: 3). Each user is assigned `role = 'admin'` in `organization_members` for their respective tenant.
