@@ -96,19 +96,35 @@ This report contains only the tests that have been written, automated, and execu
 
 ## 4. Key Viva Voce Defense Answers
 
-### Q1: Why use Random Forest when Logistic Regression achieved slightly higher Accuracy (90.67% vs 89.33%)?
-> *"In software project scheduling, False Negatives (predicting a task will finish on time when it will actually blow past deadline) carry severe cost. Random Forest achieved a higher **Recall of 94.54%** compared to 94.04% for Logistic Regression, catching more critical delays. Furthermore, real-world task risk exhibits non-linear threshold effects (e.g. high workload combined with low progress) that an ensemble of decision trees models more naturally than a linear hyperplane."*
+### Q1: Why use Random Forest when the baseline Logistic Regression scored slightly higher accuracy (90.67% vs 89.33%)?
+> *"On my synthetic data, the baseline was slightly better or equal across accuracy, F1, and ROC-AUC. I kept Random Forest because it handles non-linear feature interactions in real data and provides feature importance rankings, and I report honestly that it did not beat the baseline here. With real team data, I would compare them again."*
+
+### Q1.1: How does your pipeline prevent data leakage?
+> *"We separate preprocessing leakage from target leakage:
+> 1. **Preprocessing Leakage:** Prevented by scikit-learn's `Pipeline`, which ensures the `StandardScaler` and `OneHotEncoder` fit exclusively on training folds, never on test data.
+> 2. **Target Leakage:** Prevented during feature design. All input variables (`complexity`, `assignee_workload`, `midpoint_progress`) are strictly point-in-time snapshots captured *before* the completion outcome occurred."*
 
 ### Q2: Why is the dataset synthetic, and what would real data change?
-> *"Because proprietary software companies do not publicly disclose internal sprint velocity, assignee workloads, and task delay histories due to confidentiality, we constructed a synthetic dataset with 3,000 records using probabilistic rules. The scores demonstrate that the data pipeline, scaling, one-hot encoding, and scikit-learn models function properly, but real-world accuracy is unknown. In a commercial deployment, real-world data would introduce human fatigue, changing client requirements, and uneven code complexity."*
+> *"Proprietary software companies do not publish internal sprint velocity and delay records due to confidentiality. More importantly, I had no time for a real-world multi-team pilot during the semester build timeline, so the logical next step is collecting data from real teams. Real data would introduce noisy human factors, shifting client requirements, and uneven task difficulty."*
 
-### Q3: How do you prevent one organization from accessing another's data?
-> *"Multi-tenancy is enforced at two distinct layers:
-> 1. **Database Schema:** Every workspace, project, task, channel, and file contains an immutable `org_id` foreign key with indexed lookups (`idx_tasks_org`).
-> 2. **Application Middleware:** The `requireRole` middleware extracts `orgId` from route parameters or headers and verifies that `req.user.id` has an active membership record in `organization_members WHERE org_id = $1`. If no membership exists, an HTTP 403 Forbidden is returned immediately before any table queries execute."*
+### Q3: How do you stop one organization from seeing another's data?
+> *"Foreign keys and indexes maintain referential consistency, but they do NOT isolate tenants. True isolation is enforced because every database query explicitly filters by `org_id`, and the `requireRole` middleware checks that `req.user.id` is an active member of `org_id` before executing any query. Our 10 automated multi-tenancy tests provide concrete proof that cross-tenant requests consistently receive HTTP 403 Forbidden."*
 
 ### Q4: How does real-time chat remain consistent after a network disconnect?
-> *"We implement a **persist-then-broadcast** architecture. When a user sends a message via Socket.IO, the Node.js server synchronously inserts the record into PostgreSQL's `messages` table and obtains its generated sequence ID and timestamp *before* emitting the message to the room. When a client reconnects after a network drop, it fetches missing messages using standard HTTP `GET /api/chat/channels/:channelId/messages` from the PostgreSQL source of truth."*
+> *"We implement a **persist-then-broadcast** architecture. When a user sends a message via Socket.IO, the Node.js server synchronously inserts the record into PostgreSQL's `messages` table and obtains its database-generated sequence ID and UTC timestamp *before* emitting the message to the channel room. If a client disconnects and reconnects, it retrieves historical messages directly from PostgreSQL via `GET /api/chat/channels/:channelId/messages`."*
 
 ### Q5: How does the AI Assistant avoid leaking private documents?
-> *"The AI assistant operates on zero client-side credentials. All summarization and action-item extraction requests require an authenticated JWT bearer token and are processed through the backend Express controller (`/api/ai/summarize`). The Gemini API key resides solely on the server in `.env` and is never transmitted to the browser. Input text is validated against request length limits, and each session is isolated to the authenticated user."*
+> *"The assistant currently only processes text that the user explicitly provides in the input prompt. There is no automated document retrieval (RAG) yet. If I add document search in the future, permission and tenant filtering must happen before sending any retrieved context to the language model. Furthermore, the Gemini API key is stored exclusively on the server in `.env` and is never sent to the browser."*
+
+### Q6: How are user passwords hashed in the backend?
+> *"Passwords are hashed using `bcryptjs` with **12 salt rounds** (`await bcrypt.genSalt(12)` in `authController.js`), producing industry-standard `$2a$12$` hashes that resist brute-force dictionary attacks."*
+
+---
+
+## 5. Project Limitations & Future Scope
+
+In the interest of academic integrity, the following limitations are explicitly documented:
+1. **Synthetic Machine Learning Data:** The 3,000-record dataset was generated probabilistically; models reflect synthetic pipeline behavior rather than real-world task dynamics.
+2. **Collaborative Document Editing:** Shared rich-text editing (Yjs / CRDT) was deferred to future scope to focus on multi-tenant access control, real-time messaging, and delay forecasting.
+3. **AI Document Retrieval:** The AI Assistant operates on user-submitted text prompts; full-text semantic search (RAG) over uploaded workspace files is planned for future iterations.
+4. **Mobile Delivery:** Mobile access is delivered via an installable Progressive Web App (PWA) with manifest and service worker, rather than a compiled native Android APK.
