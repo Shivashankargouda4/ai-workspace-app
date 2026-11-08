@@ -41,17 +41,17 @@
 - **Validation:** 5-Fold Stratified Cross-Validation:
   - Logistic Regression (Baseline): **90.17%** (±0.97%) CV Accuracy, 0.966 ROC-AUC.
   - Random Forest (Primary): **89.03%** (±1.03%) CV Accuracy, 0.956 ROC-AUC.
-- **Top Feature Importances:**
+- **Feature Importance Rankings (Reflects Synthetic Generation Rules):**
   1. `midpoint_progress`: **38.96%**
   2. `complexity`: **27.45%**
   3. `assignee_workload`: **12.02%**
   4. `previous_delays_ratio`: **10.54%**
-- **Academic Stance:** On synthetic linear data, the baseline matched or slightly exceeded Random Forest. Random Forest was selected for production because it is architecturally prepared for non-linear interactions in real software teams.
+- **Academic Stance:** On synthetic data, the linear baseline slightly outperformed or matched Random Forest. Random Forest was retained because it handles non-linear interactions in real data and outputs feature importance, and we report honestly that it did not beat the baseline here. With real team data, we would compare them again.
 
 ### Slide 6: Database Schema & Multi-Tenant Isolation
 - 16 normalized relational tables with `TIMESTAMPTZ` UTC timestamps.
 - Audit history logging: Every Kanban status change appends a record to `task_status_history`.
-- Tenant Isolation Proof: Application-level `requireRole` middleware checks `organization_members` before query execution, returning HTTP 403 Forbidden for unauthorized tenants.
+- Tenant Isolation Proof: Foreign keys keep data consistent, but true isolation is enforced by queries filtering on `org_id` and the `requireRole` middleware verifying membership before execution, proven by our 10 automated multi-tenancy tests.
 
 ### Slide 7: Real-Time Communication & AI Assistant
 - **Chat Engine:** Socket.IO room multicast using a **persist-then-broadcast** protocol (writes to PostgreSQL before emitting).
@@ -77,14 +77,14 @@
 
 ## 2. Five-Minute Viva Voce Defense Script
 
-> *"Good morning respected evaluators and guide. My project is an **AI-Powered Real-Time Collaborative Workspace with Predictive Analytics**, developed for Kishkindha University.*
+> *"Good morning respected evaluators and guide. My project is an **AI-Powered Real-Time Collaborative Workspace with Predictive Analytics**, developed for Kishkindha University.
 >
-> *Traditional project trackers like Jira or Trello are retrospective—they notify managers only after a deadline has been breached. The core innovation of this platform is proactive risk mitigation: as developers update task progress on our Kanban board, the system passes mid-sprint velocity snapshots to a FastAPI machine learning service that calculates the probability of task delay.*
+> Traditional project trackers like Jira or Trello are retrospective—they notify managers only after a deadline has been breached. The core innovation of this platform is proactive risk mitigation: as developers update task progress on our Kanban board, the system passes mid-sprint velocity snapshots to a FastAPI machine learning service that calculates the probability of task delay.
 >
-> *We evaluated both Logistic Regression and Random Forest using 5-Fold Stratified Cross-Validation on a 3,000-record dataset. While the linear baseline achieved 90.17% CV accuracy, Random Forest scored 89.03% and identified critical non-linear signals—specifically that `midpoint_progress` (38.96%) and `complexity` (27.45%) are the primary risk drivers.*
+> We evaluated both Logistic Regression and Random Forest using 5-Fold Stratified Cross-Validation on a 3,000-record dataset. On this synthetic dataset, the baseline Logistic Regression slightly outperformed Random Forest with 90.17% vs 89.03% CV accuracy. I retained Random Forest because it is architecturally prepared for non-linear interactions in real software team data and provides feature importance rankings, but I report honestly that it did not beat the baseline on this linear synthetic dataset.
 >
-> *On the engineering side, the backend is built with Node.js and PostgreSQL 18 with 16 normalized tables. Multi-tenancy is enforced using our `requireRole` middleware, which verifies that the user belongs to the requested organization before any SQL query executes. We proved this through 10 automated multi-tenancy tests that confirmed HTTP 403 Forbidden on cross-tenant requests.*
+> On the engineering side, the backend is built with Node.js and PostgreSQL 18 with 16 normalized tables. Foreign keys maintain database consistency, but true tenant isolation is enforced because every database query filters by `org_id` and our `requireRole` middleware verifies active membership before execution. We proved this through 10 automated multi-tenancy tests that confirmed HTTP 403 Forbidden on cross-tenant requests.
 >
-> *For real-time chat, we solved the message consistency problem using a persist-then-broadcast pattern: messages are saved in PostgreSQL before emitting via Socket.IO. We also built an AI assistant for meeting summarization, a visual Recharts analytics dashboard, and a Progressive Web App service worker for mobile access.*
+> For real-time chat, we solved the message consistency problem using a persist-then-broadcast pattern: messages are saved in PostgreSQL before emitting via Socket.IO. We also built an AI assistant for meeting summarization, a visual Recharts analytics dashboard, and an installable Progressive Web App (PWA) service worker for mobile access.
 >
-> *I have verified the system through 31 automated tests, and I invite you to view the live demonstration."*
+> I have verified the system through 31 automated tests, and I invite you to view the live demonstration."*

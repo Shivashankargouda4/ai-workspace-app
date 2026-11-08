@@ -74,8 +74,8 @@ The trained Random Forest model provides explicit feature importance weightings:
 | `priority_low` | 2.31% |
 | `priority_medium` | 1.12% |
 
-- **Primary Driver:** `midpoint_progress` and `complexity` constitute the dominant predictive signals for project delay risk.
-- **Secondary Factors:** `assignee_workload` and `previous_delays_ratio` compound the delay probability when midpoint progress lags.
+- **Academic Interpretation:** Feature importance reflects the synthetic generation rules, rather than proven real-world project dynamics. In our generation formula, midpoint progress and task complexity were given higher weight, and the Random Forest model learned these synthetic rules accordingly.
+
 
 ---
 

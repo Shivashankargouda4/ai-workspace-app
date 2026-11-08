@@ -106,10 +106,10 @@ The application follows a distributed, multi-tier microservices architecture:
 - Cross-Origin Resource Sharing (CORS) MUST be restricted strictly to configured client origins.
 - API endpoints MUST be protected against brute-force attacks via `express-rate-limit`.
 
-### 4.2 Performance Requirements
-- WebSocket event delivery latency MUST be under 50 milliseconds on local network.
-- REST API response times for authenticated CRUD operations MUST be under 150 milliseconds.
-- Machine Learning inference via FastAPI MUST complete in under 20 milliseconds per task.
+### 4.2 Performance Design Targets
+- **WebSocket Latency Target:** p95 under 500 ms with 20 concurrent users on local network (design target, unbenchmarked under load).
+- **REST API Target:** Authenticated CRUD operations intended to complete under 300 ms on local test environments.
+- **Machine Learning Inference Target:** Inference pipeline via FastAPI intended to complete under 100 ms per task.
 
 ### 4.3 Data Integrity & Timestamps
 - All timestamps MUST be stored in PostgreSQL using `TIMESTAMPTZ` (UTC) to eliminate timezone skew across distributed teams.
