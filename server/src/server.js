@@ -13,6 +13,8 @@ const orgRoutes = require('./routes/orgs');
 const taskRoutes = require('./routes/tasks');
 const chatRoutes = require('./routes/chat');
 const aiRoutes = require('./routes/ai');
+const analyticsRoutes = require('./routes/analytics');
+const fileRoutes = require('./routes/files');
 
 const app = express();
 const server = http.createServer(app);
@@ -57,6 +59,8 @@ app.use('/api/orgs', orgRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/files', fileRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {

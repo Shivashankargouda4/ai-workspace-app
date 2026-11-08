@@ -7,6 +7,7 @@ import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Kanban from './pages/Kanban';
 import Chat from './pages/Chat';
+import Analytics from './pages/Analytics';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
@@ -32,6 +33,7 @@ function ProtectedLayout() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/kanban" element={<Kanban />} />
             <Route path="/chat" element={<Chat />} />
+            <Route path="/analytics" element={<Analytics />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
