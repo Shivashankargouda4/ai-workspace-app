@@ -3,9 +3,9 @@
 
 -- 1. Demo Users (passwords hashed for 'password123')
 INSERT INTO users (id, name, email, password_hash, avatar_url) VALUES
-(1, 'Admin Shiva', 'admin@workspace.local', '$2a$12$e80yq7z2mUfZW1u9yH0aEOxHh6xLwY9Ukm4JzFj4Qp2t6U9J7vD2e', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Shiva'),
-(2, 'Priya Manager', 'priya@workspace.local', '$2a$12$e80yq7z2mUfZW1u9yH0aEOxHh6xLwY9Ukm4JzFj4Qp2t6U9J7vD2e', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Priya'),
-(3, 'Rahul Member', 'rahul@workspace.local', '$2a$12$e80yq7z2mUfZW1u9yH0aEOxHh6xLwY9Ukm4JzFj4Qp2t6U9J7vD2e', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Rahul')
+(1, 'Admin Shiva', 'admin@workspace.local', '$2a$10$RP148cJ6WI30EZqJBNcaDe9OM8L3pNEK15O2Uw6pZkDujl6K4d9P2', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Shiva'),
+(2, 'Priya Manager', 'priya@workspace.local', '$2a$10$RP148cJ6WI30EZqJBNcaDe9OM8L3pNEK15O2Uw6pZkDujl6K4d9P2', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Priya'),
+(3, 'Rahul Member', 'rahul@workspace.local', '$2a$10$RP148cJ6WI30EZqJBNcaDe9OM8L3pNEK15O2Uw6pZkDujl6K4d9P2', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Rahul')
 ON CONFLICT (id) DO NOTHING;
 
 ALTER SEQUENCE users_id_seq RESTART WITH 4;
