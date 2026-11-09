@@ -25,11 +25,18 @@ async function runFileTests() {
 
   try {
     // 1. Authenticate user
-    console.log('1. Authenticating test user (alice@example.com)...');
+    console.log('1. Authenticating test user (admin@workspace.local)...');
+    const demoPassword = process.env.DEMO_PASSWORD || 'password123';
     let login = await req('POST', '/auth/login', {
-      email: 'alice@example.com',
-      password: 'password123',
+      email: 'admin@workspace.local',
+      password: demoPassword,
     });
+    if (login.status !== 200) {
+      login = await req('POST', '/auth/login', {
+        email: 'alice@example.com',
+        password: 'password123',
+      });
+    }
     if (login.status !== 200) {
       login = await req('POST', '/auth/login', {
         email: 'test@example.com',

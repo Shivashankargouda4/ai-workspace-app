@@ -23,12 +23,18 @@ async function runAiTests() {
   console.log('==================================================\n');
 
   try {
-    // 1. Login with test account
+    // 1. Login with test account (admin@workspace.local or fallback)
     console.log('1. Authenticating test user...');
-    const login = await req('POST', '/auth/login', {
-      email: 'test@example.com',
-      password: 'Test@12345',
+    let login = await req('POST', '/auth/login', {
+      email: 'admin@workspace.local',
+      password: 'password123',
     });
+    if (login.status !== 200) {
+      login = await req('POST', '/auth/login', {
+        email: 'test@example.com',
+        password: 'Test@12345',
+      });
+    }
     if (login.status !== 200) throw new Error('Login failed: ' + JSON.stringify(login.data));
     const token = login.data.accessToken;
     console.log('   ✅ Authenticated successfully.\n');

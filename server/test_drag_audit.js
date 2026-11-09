@@ -10,10 +10,11 @@ async function verifyDragAudit() {
   try {
     // 1. Log in as Admin
     console.log('1. Authenticating Admin (admin@workspace.local)...');
-    const loginRes = await fetch(`${API}/auth/login`, {
+    const demoPassword = process.env.DEMO_PASSWORD || 'password123';
+    let loginRes = await fetch(`${API}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'admin@workspace.local', password: 'password123' }),
+      body: JSON.stringify({ email: 'admin@workspace.local', password: demoPassword }),
     });
     const loginData = await loginRes.json();
     if (loginRes.status !== 200) throw new Error('Login failed: ' + JSON.stringify(loginData));
@@ -22,19 +23,21 @@ async function verifyDragAudit() {
 
     // 2. Fetch current status of Task 5
     const taskBefore = await db.query('SELECT id, title, status, progress FROM tasks WHERE id = 5');
+    const currentStatus = taskBefore.rows[0].status;
+    const targetStatus = currentStatus === 'in_progress' ? 'review' : (currentStatus === 'review' ? 'done' : 'in_progress');
     console.log(`2. Task 5 Current State: "${taskBefore.rows[0].title}"`);
-    console.log(`   Status:   ${taskBefore.rows[0].status}`);
+    console.log(`   Status:   ${currentStatus}`);
     console.log(`   Progress: ${taskBefore.rows[0].progress}%\n`);
 
-    // 3. Move Task 5 from 'todo' to 'in_progress' (simulating Kanban card drag)
-    console.log("3. Simulating Kanban drag: Moving Task 5 to 'in_progress'...");
+    // 3. Move Task 5 to targetStatus (simulating Kanban card drag)
+    console.log(`3. Simulating Kanban drag: Moving Task 5 to '${targetStatus}'...`);
     const patchRes = await fetch(`${API}/tasks/5/status`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ status: 'in_progress' }),
+      body: JSON.stringify({ status: targetStatus }),
     });
     const patchData = await patchRes.json();
     if (patchRes.status !== 200) throw new Error('PATCH failed: ' + JSON.stringify(patchData));

@@ -162,7 +162,7 @@ const updateTaskStatus = async (req, res) => {
 
     // Call ML Microservice to forecast delay risk and persist in task_predictions
     try {
-      const mlUrl = process.env.ML_SERVICE_URL || 'http://localhost:8000';
+      const mlUrl = process.env.ML_SERVICE_URL || 'http://127.0.0.1:8000';
       const mlResponse = await fetch(`${mlUrl}/predict`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -189,14 +189,16 @@ const updateTaskStatus = async (req, res) => {
           );
         } else {
           await client.query(
-            `INSERT INTO task_predictions (task_id, delay_probability, risk_level, model_version)
-             VALUES ($1, $2, $3, $4)`,
+            `INSERT INTO task_predictions (task_id, delay_probability, risk_level, model_version, predicted_at)
+             VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)`,
             [taskId, mlData.delay_probability, mlData.risk_level, mlData.model_version]
           );
         }
+      } else {
+        console.warn('ML service returned non-200:', mlResponse.status);
       }
     } catch (mlErr) {
-      // Optional fallback if ML service is offline
+      console.warn('ML dispatch notice:', mlErr.message);
     }
 
     await client.query('COMMIT');
