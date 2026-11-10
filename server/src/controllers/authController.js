@@ -167,10 +167,75 @@ const getMe = async (req, res) => {
   res.json({ user: req.user });
 };
 
+const updateProfileSchema = z.object({
+  name: z.string().trim().min(2, 'Name must be at least 2 characters').max(100).optional(),
+  avatar_url: z
+    .string()
+    .trim()
+    .url('Avatar must be a valid URL')
+    .max(500)
+    .optional(),
+  currentPassword: z.string().min(1).optional(),
+  newPassword: z.string().min(6, 'New password must be at least 6 characters').optional(),
+});
+
+const updateProfile = async (req, res) => {
+  try {
+    const data = updateProfileSchema.parse(req.body);
+    if (data.newPassword && !data.currentPassword) {
+      return res.status(400).json({ error: 'Current password is required to set a new password.' });
+    }
+
+    const userRes = await db.query(
+      'SELECT id, name, email, avatar_url, password_hash FROM users WHERE id = $1',
+      [req.user.id]
+    );
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+    const existing = userRes.rows[0];
+
+    let nextHash = existing.password_hash;
+    if (data.newPassword) {
+      const valid = await bcrypt.compare(data.currentPassword, existing.password_hash);
+      if (!valid) {
+        return res.status(401).json({ error: 'Current password is incorrect.' });
+      }
+      const salt = await bcrypt.genSalt(12);
+      nextHash = await bcrypt.hash(data.newPassword, salt);
+    }
+
+    const updated = await db.query(
+      `UPDATE users
+       SET name = $1,
+           avatar_url = $2,
+           password_hash = $3,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $4
+       RETURNING id, name, email, avatar_url`,
+      [
+        data.name || existing.name,
+        data.avatar_url !== undefined ? data.avatar_url : existing.avatar_url,
+        nextHash,
+        req.user.id,
+      ]
+    );
+
+    res.json({ user: updated.rows[0], message: 'Profile updated successfully.' });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors[0].message });
+    }
+    console.error('Update profile error:', error);
+    res.status(500).json({ error: 'Failed to update profile.' });
+  }
+};
+
 module.exports = {
   register,
   login,
   refresh,
   logout,
   getMe,
+  updateProfile,
 };

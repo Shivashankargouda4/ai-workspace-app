@@ -1,5 +1,5 @@
 // AI Collaborative Workspace - Progressive Web App Service Worker
-const CACHE_NAME = 'workspace-cache-v1';
+const CACHE_NAME = 'workspace-cache-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -35,24 +35,25 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// 3. Fetch Event: Network-first for API, Cache-first for static assets
+// 3. Fetch Event: Network-first so rebuilt Vite bundles always load cleanly
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Skip WebSocket connections or non-GET requests
-  if (event.request.method !== 'GET' || url.protocol.startsWith('ws')) {
+  // Skip WebSocket/Socket.IO/API or non-GET requests
+  if (
+    event.request.method !== 'GET' ||
+    url.protocol.startsWith('ws') ||
+    url.pathname.startsWith('/api') ||
+    url.pathname.startsWith('/socket.io') ||
+    url.pathname.startsWith('/collab')
+  ) {
     return;
   }
 
-  // API calls: Network-first with no cache fallback to ensure fresh data
-  if (url.pathname.startsWith('/api')) {
-    return;
-  }
-
-  // Static Assets & Navigation: Stale-while-revalidate strategy
+  // Network-first with cache fallback for offline resilience
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      const fetchPromise = fetch(event.request).then((networkResponse) => {
+    fetch(event.request)
+      .then((networkResponse) => {
         if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
@@ -60,14 +61,14 @@ self.addEventListener('fetch', (event) => {
           });
         }
         return networkResponse;
-      }).catch(() => {
-        // Offline fallback for navigation requests
+      })
+      .catch(async () => {
+        const cached = await caches.match(event.request);
+        if (cached) return cached;
         if (event.request.mode === 'navigate') {
           return caches.match('/index.html');
         }
-      });
-
-      return cachedResponse || fetchPromise;
-    })
+        return undefined;
+      })
   );
 });

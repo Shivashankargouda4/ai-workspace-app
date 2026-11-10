@@ -38,6 +38,27 @@ const RESOURCE_QUERIES = {
     JOIN organization_members om ON om.org_id = w.org_id
     WHERE f.id = $1 AND om.user_id = $2
   `,
+  document: `
+    SELECT d.*, w.org_id AS resolved_org_id, om.role AS member_role
+    FROM documents d
+    JOIN workspaces w ON d.workspace_id = w.id
+    JOIN organization_members om ON om.org_id = w.org_id
+    WHERE d.id = $1 AND om.user_id = $2
+  `,
+  code_file: `
+    SELECT cf.*, w.org_id AS resolved_org_id, om.role AS member_role
+    FROM code_files cf
+    JOIN workspaces w ON cf.workspace_id = w.id
+    JOIN organization_members om ON om.org_id = w.org_id
+    WHERE cf.id = $1 AND om.user_id = $2
+  `,
+  meeting: `
+    SELECT m.*, w.org_id AS resolved_org_id, om.role AS member_role
+    FROM meetings m
+    JOIN workspaces w ON m.workspace_id = w.id
+    JOIN organization_members om ON om.org_id = w.org_id
+    WHERE m.id = $1 AND om.user_id = $2
+  `,
 };
 
 /**
@@ -60,7 +81,20 @@ async function resolveAuthorizedResource(resourceType, resourceId, userId, query
   }
 
   const result = await queryRunner.query(sql, [parsedResourceId, parsedUserId]);
-  return result.rows[0] || null;
+  const row = result.rows[0] || null;
+  if (!row) return null;
+
+  // Enforce private 1-to-1 participant restriction on direct message channels
+  if (resourceType === 'channel' && row.type === 'direct' && row.dm_key) {
+    const parts = String(row.dm_key).split(':');
+    const p1 = Number(parts[1]);
+    const p2 = Number(parts[2]);
+    if (parsedUserId !== p1 && parsedUserId !== p2) {
+      return null;
+    }
+  }
+
+  return row;
 }
 
 module.exports = {

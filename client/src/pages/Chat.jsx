@@ -1,47 +1,92 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { io } from 'socket.io-client';
-import { Send, Hash, UserCircle, RefreshCw } from 'lucide-react';
+import { Send, Hash, UserCircle, Plus, MessageCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useWorkspace } from '../context/WorkspaceContext';
 import api from '../api/client';
 import toast from 'react-hot-toast';
 
 export default function Chat() {
   const { user } = useAuth();
-  const [channels, setChannels] = useState([
-    { id: 1, name: 'general' },
-    { id: 2, name: 'project-discussion' },
-  ]);
-  const [currentChannelId, setCurrentChannelId] = useState(1);
+  const { workspaceId, orgId, members } = useWorkspace();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const [channels, setChannels] = useState([]);
+  const [currentChannelId, setCurrentChannelId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [typingUser, setTypingUser] = useState(null);
   const [connected, setConnected] = useState(false);
 
+  const [showNewChannel, setShowNewChannel] = useState(false);
+  const [newChannelName, setNewChannelName] = useState('');
+  const [creatingChannel, setCreatingChannel] = useState(false);
+
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
 
-  // Auto-scroll to bottom of chat
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // 1. Fetch channel list
-  useEffect(() => {
-    const fetchChannels = async () => {
-      try {
-        const res = await api.get('/chat/channels/1');
-        if (res.data.channels?.length > 0) {
-          setChannels(res.data.channels);
-        }
-      } catch (err) {
-        console.error('Failed to load channels', err);
-      }
-    };
-    fetchChannels();
-  }, []);
+  const loadChannels = useCallback(async () => {
+    if (!workspaceId) {
+      setChannels([]);
+      setCurrentChannelId(null);
+      return [];
+    }
+    try {
+      const res = await api.get(`/chat/channels/${workspaceId}`);
+      const list = res.data?.channels || [];
+      setChannels(list);
+      setCurrentChannelId((prev) =>
+        prev && list.some((c) => c.id === prev) ? prev : (list[0]?.id ?? null)
+      );
+      return list;
+    } catch (err) {
+      console.error('Failed to load channels', err);
+      return [];
+    }
+  }, [workspaceId]);
 
-  // 2. Fetch message history when channel changes
   useEffect(() => {
+    loadChannels();
+  }, [loadChannels]);
+
+  const handleOpenDm = useCallback(
+    async (recipientUserId) => {
+      if (!orgId || !recipientUserId || recipientUserId === user?.id) return;
+      try {
+        const res = await api.post('/chat/dm', {
+          org_id: orgId,
+          recipient_user_id: Number(recipientUserId),
+        });
+        const dmChannel = res.data.channel;
+        await loadChannels();
+        setCurrentChannelId(dmChannel.id);
+      } catch (err) {
+        toast.error(err.response?.data?.error || 'Failed to open direct message.');
+      }
+    },
+    [orgId, user?.id, loadChannels]
+  );
+
+  // Support deep link from Team page: /chat?dmUserId=123
+  useEffect(() => {
+    const dmUserId = Number(searchParams.get('dmUserId'));
+    if (dmUserId && orgId) {
+      handleOpenDm(dmUserId);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, orgId, handleOpenDm, setSearchParams]);
+
+  // Fetch message history when active channel changes
+  useEffect(() => {
+    if (!currentChannelId) {
+      setMessages([]);
+      return;
+    }
     const fetchMessages = async () => {
       try {
         const res = await api.get(`/chat/messages/${currentChannelId}`);
@@ -54,14 +99,15 @@ export default function Chat() {
     fetchMessages();
   }, [currentChannelId]);
 
-  // 3. Socket.IO connection & listeners
+  // Socket.IO connection & listeners
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
-    if (!token) return;
+    if (!token || !currentChannelId) return;
 
-    const socketUrl = window.location.hostname === 'localhost' && window.location.port === '5173'
-      ? 'http://localhost:5000'
-      : window.location.origin;
+    const socketUrl =
+      window.location.hostname === 'localhost' && window.location.port === '5173'
+        ? 'http://localhost:5000'
+        : window.location.origin;
 
     const socket = io(socketUrl, {
       auth: { token },
@@ -108,10 +154,32 @@ export default function Chat() {
     };
   }, [currentChannelId]);
 
-  // Handle typing debounce
+  const handleCreateChannel = async (e) => {
+    e.preventDefault();
+    const trimmed = newChannelName.trim();
+    if (!trimmed || !workspaceId) return;
+    setCreatingChannel(true);
+    try {
+      const res = await api.post('/chat/channels', {
+        workspace_id: workspaceId,
+        name: trimmed,
+      });
+      const created = res.data.channel;
+      setNewChannelName('');
+      setShowNewChannel(false);
+      await loadChannels();
+      setCurrentChannelId(created.id);
+      toast.success(`Channel #${created.name} created`);
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to create channel.');
+    } finally {
+      setCreatingChannel(false);
+    }
+  };
+
   const handleInputChange = (e) => {
     setInputText(e.target.value);
-    if (socketRef.current && user) {
+    if (socketRef.current && user && currentChannelId) {
       socketRef.current.emit('typing:start', {
         channelId: currentChannelId,
         userName: user.name,
@@ -122,10 +190,9 @@ export default function Chat() {
     }
   };
 
-  // Send message
   const handleSend = (e) => {
     e.preventDefault();
-    if (!inputText.trim()) return;
+    if (!inputText.trim() || !currentChannelId) return;
 
     if (socketRef.current && connected) {
       socketRef.current.emit('message:send', {
@@ -138,82 +205,177 @@ export default function Chat() {
     }
   };
 
-  const currentChannelName = channels.find((c) => c.id === currentChannelId)?.name || 'channel';
+  const publicChannels = channels.filter((c) => c.type !== 'direct');
+  const dmChannels = channels.filter((c) => c.type === 'direct');
+  const activeChannel = channels.find((c) => c.id === currentChannelId);
+  const currentChannelLabel = activeChannel
+    ? activeChannel.type === 'direct'
+      ? `@ ${activeChannel.display_name || activeChannel.name}`
+      : `# ${activeChannel.display_name || activeChannel.name}`
+    : 'channel';
+  const teammates = (members || []).filter((m) => m.id !== user?.id);
 
   return (
     <div className="h-[calc(100vh-8rem)] bg-white rounded-xl border border-slate-200 shadow-sm flex overflow-hidden">
-      {/* Channels Sidebar (Desktop) */}
+      {/* Channels & Direct Messages Sidebar */}
       <div className="hidden md:flex w-64 border-r border-slate-200 bg-slate-50 flex-col shrink-0">
-        <div className="p-4 border-b border-slate-200">
-          <h3 className="font-semibold text-slate-800 text-sm">Channels & Rooms</h3>
+        <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+          <h3 className="font-semibold text-slate-800 text-sm">Channels</h3>
+          <button
+            type="button"
+            onClick={() => setShowNewChannel((p) => !p)}
+            title="Create channel"
+            className="p-1 text-slate-500 hover:text-brand-600 hover:bg-white rounded"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
         </div>
-        <div className="p-3 space-y-1 flex-1 overflow-y-auto">
-          {channels.map((ch) => (
+
+        {showNewChannel && (
+          <form onSubmit={handleCreateChannel} className="p-2.5 border-b border-slate-200 bg-white flex gap-1.5">
+            <input
+              type="text"
+              required
+              minLength={2}
+              value={newChannelName}
+              onChange={(e) => setNewChannelName(e.target.value)}
+              placeholder="e.g. sprint-qa"
+              className="flex-1 min-w-0 px-2.5 py-1 text-xs border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-brand-500"
+            />
             <button
-              key={ch.id}
-              onClick={() => setCurrentChannelId(ch.id)}
-              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-sm transition ${
-                currentChannelId === ch.id
-                  ? 'bg-brand-50 text-brand-700 shadow-sm'
-                  : 'text-slate-600 hover:bg-slate-100'
-              }`}
+              type="submit"
+              disabled={creatingChannel}
+              className="px-2 py-1 bg-brand-600 text-white rounded text-xs font-medium disabled:opacity-50"
             >
-              <Hash className="w-4 h-4 text-slate-400" /> {ch.name}
+              Add
             </button>
-          ))}
+          </form>
+        )}
+
+        <div className="p-3 space-y-4 flex-1 overflow-y-auto">
+          <div className="space-y-1">
+            {publicChannels.map((ch) => (
+              <button
+                key={ch.id}
+                onClick={() => setCurrentChannelId(ch.id)}
+                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-sm transition ${
+                  currentChannelId === ch.id
+                    ? 'bg-brand-50 text-brand-700 shadow-sm'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <Hash className="w-4 h-4 text-slate-400 shrink-0" />
+                <span className="truncate">{ch.display_name || ch.name}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Direct Messages Section */}
+          <div>
+            <div className="px-2 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              Direct Messages
+            </div>
+            {teammates.length === 0 ? (
+              <p className="px-2 text-xs text-slate-400">Invite teammates on Team page to chat 1-on-1.</p>
+            ) : (
+              <div className="space-y-1">
+                {teammates.map((m) => {
+                  const existingDm = dmChannels.find((d) => d.peer_id === m.id);
+                  const isActive = existingDm && existingDm.id === currentChannelId;
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() =>
+                        existingDm ? setCurrentChannelId(existingDm.id) : handleOpenDm(m.id)
+                      }
+                      className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition ${
+                        isActive
+                          ? 'bg-brand-50 text-brand-700 font-medium shadow-sm'
+                          : 'text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      <MessageCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <span className="truncate">{m.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Chat Messages Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <div className="h-14 border-b border-slate-200 px-3 sm:px-6 flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <Hash className="w-5 h-5 text-slate-500 shrink-0" />
+        <div className="h-14 border-b border-slate-200 px-3 sm:px-6 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 min-w-0">
             <select
-              value={currentChannelId}
+              value={currentChannelId || ''}
               onChange={(e) => setCurrentChannelId(Number(e.target.value))}
               aria-label="Select channel"
-              className="md:hidden text-sm font-semibold text-slate-800 bg-slate-100 py-1 px-2 rounded border border-slate-200 focus:outline-none"
+              className="md:hidden text-sm font-semibold text-slate-800 bg-slate-100 py-1 px-2 rounded border border-slate-200 focus:outline-none max-w-[200px]"
             >
               {channels.map((ch) => (
-                <option key={ch.id} value={ch.id}>#{ch.name}</option>
+                <option key={ch.id} value={ch.id}>
+                  {ch.type === 'direct' ? `@ ${ch.display_name}` : `# ${ch.display_name || ch.name}`}
+                </option>
               ))}
             </select>
-            <span className="hidden md:inline font-semibold text-slate-800 text-sm">{currentChannelName}</span>
+            <span className="hidden md:inline font-semibold text-slate-800 text-sm truncate">
+              {currentChannelLabel}
+            </span>
           </div>
-          <span className={`text-[11px] sm:text-xs font-medium flex items-center gap-1.5 ${connected ? 'text-emerald-600' : 'text-slate-400'}`}>
-            <span className={`w-2 h-2 rounded-full ${connected ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`}></span>
+          <span
+            className={`text-[11px] sm:text-xs font-medium flex items-center gap-1.5 shrink-0 ${
+              connected ? 'text-emerald-600' : 'text-slate-400'
+            }`}
+          >
+            <span
+              className={`w-2 h-2 rounded-full ${
+                connected ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'
+              }`}
+            ></span>
             {connected ? 'Live' : 'Connecting...'}
           </span>
         </div>
 
         {/* Message Feed */}
         <div className="flex-1 p-6 overflow-y-auto space-y-4 bg-slate-50/50">
-          {messages.map((msg) => {
-            const isMe = user?.id === msg.sender_id || user?.name === msg.sender_name;
-            const timeStr = msg.created_at
-              ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-              : 'Now';
+          {messages.length === 0 ? (
+            <div className="py-12 text-center text-xs text-slate-400">
+              No messages in {currentChannelLabel} yet. Say hello!
+            </div>
+          ) : (
+            messages.map((msg) => {
+              const isMe = user?.id === msg.sender_id || user?.name === msg.sender_name;
+              const timeStr = msg.created_at
+                ? new Date(msg.created_at).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                : 'Now';
 
-            return (
-              <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-semibold text-slate-700">{msg.sender_name}</span>
-                  <span className="text-[10px] text-slate-400">{timeStr}</span>
+              return (
+                <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-semibold text-slate-700">{msg.sender_name}</span>
+                    <span className="text-[10px] text-slate-400">{timeStr}</span>
+                  </div>
+                  <div
+                    className={`px-4 py-2.5 rounded-2xl text-sm max-w-md shadow-sm ${
+                      isMe
+                        ? 'bg-brand-600 text-white rounded-br-none'
+                        : 'bg-white border border-slate-200 text-slate-800 rounded-bl-none'
+                    }`}
+                  >
+                    {msg.content}
+                  </div>
                 </div>
-                <div
-                  className={`px-4 py-2.5 rounded-2xl text-sm max-w-md shadow-sm ${
-                    isMe
-                      ? 'bg-brand-600 text-white rounded-br-none'
-                      : 'bg-white border border-slate-200 text-slate-800 rounded-bl-none'
-                  }`}
-                >
-                  {msg.content}
-                </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
           {typingUser && (
             <div className="text-xs text-slate-400 italic animate-pulse">
               {typingUser} is typing...
@@ -228,7 +390,7 @@ export default function Chat() {
             type="text"
             value={inputText}
             onChange={handleInputChange}
-            placeholder={`Message #${currentChannelName}...`}
+            placeholder={`Message ${currentChannelLabel}...`}
             className="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm"
           />
           <button
@@ -236,7 +398,8 @@ export default function Chat() {
             disabled={!inputText.trim() || !connected}
             className="bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-lg transition font-medium flex items-center gap-2 text-sm shadow-sm disabled:opacity-50"
           >
-            <Send className="w-4 h-4" /> Send
+            <Send className="w-4 h-4" />
+            <span className="hidden sm:inline">Send</span>
           </button>
         </form>
       </div>

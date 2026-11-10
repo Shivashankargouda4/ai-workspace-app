@@ -3,6 +3,12 @@ const fs = require('fs');
 const multer = require('multer');
 const db = require('../config/db');
 const { resolveAuthorizedResource } = require('../utils/tenantAccess');
+const {
+  UPLOADS_DIR,
+  saveUploadedFile,
+  sendStoredFile,
+  deleteStoredFile,
+} = require('../utils/fileStorage');
 
 const cleanupTempUpload = (file) => {
   if (file && file.path && fs.existsSync(file.path)) {
@@ -13,12 +19,6 @@ const cleanupTempUpload = (file) => {
     }
   }
 };
-
-// Ensure upload directory exists
-const UPLOADS_DIR = path.join(__dirname, '../../uploads');
-if (!fs.existsSync(UPLOADS_DIR)) {
-  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-}
 
 // Storage configuration with sanitized filenames
 const storage = multer.diskStorage({
@@ -78,6 +78,8 @@ const uploadFile = async (req, res) => {
       return res.status(404).json({ error: 'Workspace not found.' });
     }
 
+    const storedPath = await saveUploadedFile(req.file, workspace.resolved_org_id);
+
     const result = await db.query(
       `INSERT INTO files (workspace_id, org_id, name, path, mime_type, size, uploaded_by)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -86,7 +88,7 @@ const uploadFile = async (req, res) => {
         workspace.id,
         workspace.resolved_org_id,
         req.file.originalname,
-        req.file.filename,
+        storedPath,
         req.file.mimetype,
         req.file.size,
         req.user.id,
@@ -128,25 +130,55 @@ const getWorkspaceFiles = async (req, res) => {
   }
 };
 
-// Authenticated download endpoint
+// Authenticated download & inline preview endpoint
 const downloadFile = async (req, res) => {
   try {
     const fileRecord = await resolveAuthorizedResource('file', req.params.fileId, req.user.id);
     if (!fileRecord) {
       return res.status(404).json({ error: 'File not found or access denied.' });
     }
-    const filePath = path.join(UPLOADS_DIR, fileRecord.path);
 
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ error: 'Physical file not found on disk.' });
+    const disposition = req.query.inline === '1' ? 'inline' : 'attachment';
+    res.setHeader('Content-Type', fileRecord.mime_type || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `${disposition}; filename="${encodeURIComponent(fileRecord.name)}"`);
+    await sendStoredFile(fileRecord.path, res);
+  } catch (error) {
+    if (error.code === 'FILE_MISSING') {
+      return res.status(404).json({ error: 'Physical file not found in storage.' });
+    }
+    console.error('Download file error:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to download file.' });
+    }
+  }
+};
+
+// Delete file (uploader, manager, or admin only)
+const deleteFile = async (req, res) => {
+  try {
+    const fileRecord = await resolveAuthorizedResource('file', req.params.fileId, req.user.id);
+    if (!fileRecord) {
+      return res.status(404).json({ error: 'File not found or access denied.' });
     }
 
-    res.setHeader('Content-Type', fileRecord.mime_type || 'application/octet-stream');
-    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileRecord.name)}"`);
-    res.sendFile(filePath);
+    const canDelete =
+      fileRecord.uploaded_by === req.user.id ||
+      fileRecord.member_role === 'admin' ||
+      fileRecord.member_role === 'manager';
+
+    if (!canDelete) {
+      return res.status(403).json({
+        error: 'Only the uploader, a manager, or an admin can delete this file.',
+      });
+    }
+
+    await deleteStoredFile(fileRecord.path);
+    await db.query('DELETE FROM files WHERE id = $1', [fileRecord.id]);
+
+    res.json({ deleted: true, id: fileRecord.id });
   } catch (error) {
-    console.error('Download file error:', error);
-    res.status(500).json({ error: 'Failed to download file.' });
+    console.error('Delete file error:', error);
+    res.status(500).json({ error: 'Failed to delete file.' });
   }
 };
 
@@ -155,4 +187,5 @@ module.exports = {
   uploadFile,
   getWorkspaceFiles,
   downloadFile,
+  deleteFile,
 };

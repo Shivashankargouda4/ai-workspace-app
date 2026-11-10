@@ -88,6 +88,29 @@ const getOrgAnalytics = async (req, res) => {
   }
 };
 
+const getOrgAuditHistory = async (req, res) => {
+  try {
+    const orgId = req.params.orgId || req.orgId;
+    const result = await db.query(
+      `SELECT h.id, h.task_id, t.title AS task_title, h.old_status, h.new_status,
+              h.old_progress, h.new_progress, h.changed_at,
+              u.name AS changed_by_name
+       FROM task_status_history h
+       JOIN tasks t ON h.task_id = t.id
+       LEFT JOIN users u ON h.changed_by = u.id
+       WHERE t.org_id = $1
+       ORDER BY h.changed_at DESC, h.id DESC
+       LIMIT 25`,
+      [orgId]
+    );
+    res.json({ history: result.rows });
+  } catch (error) {
+    console.error('Get org audit history error:', error);
+    res.status(500).json({ error: 'Failed to load task audit history.' });
+  }
+};
+
 module.exports = {
   getOrgAnalytics,
+  getOrgAuditHistory,
 };

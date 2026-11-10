@@ -1,6 +1,7 @@
 const { z } = require('zod');
 const crypto = require('crypto');
 const db = require('../config/db');
+const { createAndPushNotification } = require('../utils/notificationService');
 
 const createOrgSchema = z.object({
   name: z.string().min(2, 'Organization name must be at least 2 characters'),
@@ -93,12 +94,38 @@ const createOrg = async (req, res) => {
       [defaultWorkspace.id, newOrg.id]
     );
 
+    // Create default starter project inside default workspace
+    const projResult = await client.query(
+      `INSERT INTO projects (workspace_id, org_id, name, description, status, created_by)
+       VALUES ($1, $2, 'Main Project', 'Default workspace project board', 'active', $3)
+       RETURNING *`,
+      [defaultWorkspace.id, newOrg.id, req.user.id]
+    );
+    const defaultProject = projResult.rows[0];
+
+    // Create default starter collaborative document
+    await client.query(
+      `INSERT INTO documents (workspace_id, org_id, title, content, created_by)
+       VALUES ($1, $2, 'Team Shared Notes', 'Shared workspace notes. Open this document in multiple tabs to collaborate live with multi-cursor presence.', $3)`,
+      [defaultWorkspace.id, newOrg.id, req.user.id]
+    );
+
+    // Create default starter collaborative code files
+    await client.query(
+      `INSERT INTO code_files (workspace_id, org_id, path, language, content, created_by)
+       VALUES
+         ($1, $2, 'src/main.js', 'javascript', E'// Collaborative Code Studio (JS Sandbox)\nconst greeting = "Hello from Collaborative Code Studio!";\nconsole.log(greeting);\nconsole.log("2 + 2 =", 2 + 2);', $3),
+         ($1, $2, 'src/hello.py', 'python', E'# Collaborative Python File\ndef greet(team: str) -> str:\n    return f"Welcome to {team} Code Studio!"\n\nprint(greet("Workspace"))', $3)`,
+      [defaultWorkspace.id, newOrg.id, req.user.id]
+    );
+
     await client.query('COMMIT');
 
     res.status(201).json({
       message: 'Organization created successfully',
       organization: newOrg,
       defaultWorkspace,
+      defaultProject,
     });
   } catch (error) {
     await client.query('ROLLBACK');
@@ -141,11 +168,17 @@ const getOrgDetails = async (req, res) => {
       [orgId]
     );
 
+    const projRes = await db.query(
+      `SELECT * FROM projects WHERE org_id = $1 ORDER BY created_at ASC, id ASC`,
+      [orgId]
+    );
+
     res.json({
       organization: orgRes.rows[0],
       members: membersRes.rows,
       workspaces: workspacesRes.rows,
       departments: deptRes.rows,
+      projects: projRes.rows,
       currentUserRole: req.userOrgRole,
     });
   } catch (error) {
@@ -299,6 +332,16 @@ const acceptInvitation = async (req, res) => {
     );
 
     await client.query('COMMIT');
+
+    if (invitation.created_by && invitation.created_by !== req.user.id) {
+      await createAndPushNotification(req.app.get('io'), {
+        userId: invitation.created_by,
+        orgId: invitation.org_id,
+        type: 'invitation_accepted',
+        title: 'Team Member Joined',
+        message: `${req.user.name} accepted an invite and joined as ${invitation.role}.`,
+      });
+    }
 
     res.json({
       message: 'Invitation accepted successfully! You have joined the organization.',

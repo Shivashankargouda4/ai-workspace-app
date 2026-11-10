@@ -48,11 +48,16 @@ export const AuthProvider = ({ children }) => {
       console.error('Logout error', err);
     }
     localStorage.removeItem('accessToken');
+    localStorage.removeItem('activeOrgId');
     setUser(null);
   };
 
+  const updateUser = (nextUser) => {
+    setUser(nextUser);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
