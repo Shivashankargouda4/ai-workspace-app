@@ -169,6 +169,7 @@ export default function Meet() {
   const [loadingList, setLoadingList] = useState(true);
   const [newTitle, setNewTitle] = useState('');
   const [joinCodeInput, setJoinCodeInput] = useState('');
+  const [joinCodeError, setJoinCodeError] = useState('');
   const [creating, setCreating] = useState(false);
 
   // Active call state
@@ -848,8 +849,11 @@ export default function Meet() {
   const handleJoinByCode = async (e) => {
     e.preventDefault();
     const raw = joinCodeInput.trim();
-    const code = raw.includes('/meet/') ? raw.split('/meet/').pop().split(/[?#]/)[0] : raw;
+    const code = (raw.includes('/meet/') ? raw.split('/meet/').pop().split(/[?#]/)[0] : raw)
+      .replace(/\/+$/, '')
+      .trim();
     if (!code) return;
+    setJoinCodeError('');
     try {
       const res = await api.get(`/meetings/code/${encodeURIComponent(code)}`);
       if (res.data?.meeting) {
@@ -857,7 +861,9 @@ export default function Meet() {
         await enterMeetingRoom(res.data.meeting);
       }
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Meeting code not found in your organization.');
+      const msg = err.response?.data?.error || 'Meeting code not found in your organization.';
+      setJoinCodeError(msg);
+      toast.error(msg);
     }
   };
 
@@ -1274,7 +1280,10 @@ export default function Meet() {
             <input
               type="text"
               value={joinCodeInput}
-              onChange={(e) => setJoinCodeInput(e.target.value)}
+              onChange={(e) => {
+                setJoinCodeInput(e.target.value);
+                if (joinCodeError) setJoinCodeError('');
+              }}
               placeholder="Enter meet-xxxxxxxx or paste /meet/... link"
               className="flex-1 px-3.5 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
@@ -1286,6 +1295,9 @@ export default function Meet() {
               Join
             </button>
           </div>
+          {joinCodeError && (
+            <p className="text-xs text-rose-600">{joinCodeError}</p>
+          )}
         </form>
       </div>
 

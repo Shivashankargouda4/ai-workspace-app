@@ -287,11 +287,34 @@ const createInvitation = async (req, res) => {
   }
 };
 
+// List pending invitations for an organization (Manager or Admin)
+const listInvitations = async (req, res) => {
+  try {
+    const orgId = req.params.orgId;
+    const result = await db.query(
+      `SELECT id, org_id, email, role, token, expires_at, created_at
+       FROM invitations
+       WHERE org_id = $1 AND accepted_at IS NULL AND expires_at > CURRENT_TIMESTAMP
+       ORDER BY created_at DESC, id DESC
+       LIMIT 20`,
+      [orgId]
+    );
+    const invitations = result.rows.map((inv) => ({
+      ...inv,
+      inviteLink: `/invite/${inv.token}`,
+    }));
+    res.json({ invitations });
+  } catch (error) {
+    console.error('List invitations error:', error);
+    res.status(500).json({ error: 'Failed to load pending invitations.' });
+  }
+};
+
 // Accept an invitation link
 const acceptInvitation = async (req, res) => {
   const client = await db.pool.connect();
   try {
-    const token = req.params.token;
+    const token = String(req.params.token || '').trim();
 
     await client.query('BEGIN');
 
@@ -302,7 +325,7 @@ const acceptInvitation = async (req, res) => {
 
     if (invRes.rows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ error: 'Invalid invitation link.' });
+      return res.status(404).json({ error: 'Invalid invitation link or token.' });
     }
 
     const invitation = invRes.rows[0];
@@ -317,11 +340,22 @@ const acceptInvitation = async (req, res) => {
       return res.status(410).json({ error: 'This invitation has expired.' });
     }
 
+    // Prevent an already-joined user/admin from consuming or downgrading via their own invite
+    const existingMember = await client.query(
+      'SELECT role FROM organization_members WHERE org_id = $1 AND user_id = $2',
+      [invitation.org_id, req.user.id]
+    );
+    if (existingMember.rows.length > 0) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({
+        error: `You are already a ${existingMember.rows[0].role} of this organization. Open the invite link from a different user account or Incognito browser to join as a teammate.`,
+      });
+    }
+
     // Add user to organization members
     await client.query(
       `INSERT INTO organization_members (org_id, user_id, role)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (org_id, user_id) DO UPDATE SET role = EXCLUDED.role`,
+       VALUES ($1, $2, $3)`,
       [invitation.org_id, req.user.id, invitation.role]
     );
 
@@ -361,6 +395,7 @@ module.exports = {
   getMyOrgs,
   createOrg,
   getOrgDetails,
+  listInvitations,
   createDepartment,
   createWorkspace,
   createInvitation,
