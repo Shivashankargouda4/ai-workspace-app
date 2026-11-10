@@ -13,6 +13,8 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Kanban = lazy(() => import('./pages/Kanban'));
 const Chat = lazy(() => import('./pages/Chat'));
 const Documents = lazy(() => import('./pages/Documents'));
+const CodeStudio = lazy(() => import('./pages/CodeStudio'));
+const Meet = lazy(() => import('./pages/Meet'));
 const Files = lazy(() => import('./pages/Files'));
 const Analytics = lazy(() => import('./pages/Analytics'));
 const Team = lazy(() => import('./pages/Team'));
@@ -32,10 +34,14 @@ function ProtectedShell() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const pendingInvite = sessionStorage.getItem('pendingInvitePath');
-    if (pendingInvite && pendingInvite.startsWith('/invite/') && location.pathname !== pendingInvite) {
+    const pendingPath = sessionStorage.getItem('pendingInvitePath');
+    if (
+      pendingPath &&
+      (pendingPath.startsWith('/invite/') || pendingPath.startsWith('/meet/')) &&
+      location.pathname !== pendingPath
+    ) {
       sessionStorage.removeItem('pendingInvitePath');
-      navigate(pendingInvite, { replace: true });
+      navigate(pendingPath, { replace: true });
     }
   }, [location.pathname, navigate]);
 
@@ -64,6 +70,9 @@ function ProtectedShell() {
                   <Route path="/kanban" element={<Kanban />} />
                   <Route path="/chat" element={<Chat />} />
                   <Route path="/documents" element={<Documents />} />
+                  <Route path="/code" element={<CodeStudio />} />
+                  <Route path="/meet" element={<Meet />} />
+                  <Route path="/meet/:roomCode" element={<Meet />} />
                   <Route path="/files" element={<Files />} />
                   <Route path="/analytics" element={<Analytics />} />
                   <Route path="/team" element={<Team />} />
@@ -90,9 +99,9 @@ function ProtectedLayout() {
     );
   }
 
-  // Strict route protection: unauthenticated users MUST log in first (preserve pending invite link)
+  // Strict route protection: unauthenticated users MUST log in first (preserve pending invite/meet link)
   if (!user) {
-    if (location.pathname.startsWith('/invite/')) {
+    if (location.pathname.startsWith('/invite/') || location.pathname.startsWith('/meet/')) {
       sessionStorage.setItem('pendingInvitePath', location.pathname);
     }
     return <Navigate to="/login" replace />;

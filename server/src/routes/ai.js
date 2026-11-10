@@ -7,5 +7,6 @@ router.use(requireAuth);
 
 router.post('/summarize', aiController.summarize);
 router.post('/action-items', aiController.extractActionItems);
+router.post('/explain-code', aiController.explainCode);
 
 module.exports = router;

@@ -9,14 +9,30 @@ const { resolveAuthorizedResource } = require('../utils/tenantAccess');
 const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || 'super_secret_access_token_key';
 
 /**
- * Parse canonical Hocuspocus document names of the form `doc:<positiveInt>`.
+ * Parse canonical Hocuspocus document names: `doc:<positiveInt>` or `code:<positiveInt>`.
  */
-function parseDocumentId(documentName) {
+function parseCollabTarget(documentName) {
   if (typeof documentName !== 'string') return null;
-  const match = documentName.match(/^doc:(\d+)$/);
-  if (!match) return null;
-  const id = Number(match[1]);
-  return Number.isSafeInteger(id) && id > 0 ? id : null;
+  const docMatch = documentName.match(/^doc:(\d+)$/);
+  if (docMatch) {
+    const id = Number(docMatch[1]);
+    return Number.isSafeInteger(id) && id > 0
+      ? { kind: 'document', resourceType: 'document', table: 'documents', id }
+      : null;
+  }
+  const codeMatch = documentName.match(/^code:(\d+)$/);
+  if (codeMatch) {
+    const id = Number(codeMatch[1]);
+    return Number.isSafeInteger(id) && id > 0
+      ? { kind: 'code_file', resourceType: 'code_file', table: 'code_files', id }
+      : null;
+  }
+  return null;
+}
+
+function parseDocumentId(documentName) {
+  const target = parseCollabTarget(documentName);
+  return target?.kind === 'document' ? target.id : null;
 }
 
 /**
@@ -97,7 +113,20 @@ function seedDocumentContent(ydoc, content) {
 }
 
 /**
- * Verify JWT access token and confirm document tenant membership via `organization_members`.
+ * Seed Monaco's `Y.Text('monaco')` buffer from SQL content if no Yjs history exists yet.
+ */
+function seedCodeContent(ydoc, content) {
+  if (!content) return;
+  const ytext = ydoc.getText('monaco');
+  if (ytext.length > 0) return;
+
+  ydoc.transact(() => {
+    ytext.insert(0, content);
+  }, { source: 'local', skipStoreHooks: true });
+}
+
+/**
+ * Verify JWT access token and confirm tenant membership for docs or code files via `organization_members`.
  */
 async function authenticateDocConnection({ token, documentName }) {
   if (!token || typeof token !== 'string') {
@@ -117,8 +146,8 @@ async function authenticateDocConnection({ token, documentName }) {
     throw err;
   }
 
-  const docId = parseDocumentId(documentName);
-  if (!docId) {
+  const target = parseCollabTarget(documentName);
+  if (!target) {
     const err = new Error('Invalid document identifier');
     err.reason = 'Invalid document identifier';
     throw err;
@@ -132,8 +161,8 @@ async function authenticateDocConnection({ token, documentName }) {
   }
   const user = userRes.rows[0];
 
-  const docRecord = await resolveAuthorizedResource('document', docId, user.id);
-  if (!docRecord) {
+  const record = await resolveAuthorizedResource(target.resourceType, target.id, user.id);
+  if (!record) {
     const err = new Error('Access denied to document');
     err.reason = 'Access denied to document';
     throw err;
@@ -141,10 +170,11 @@ async function authenticateDocConnection({ token, documentName }) {
 
   return {
     user,
-    docId: docRecord.id,
-    orgId: docRecord.resolved_org_id,
-    workspaceId: docRecord.workspace_id,
-    role: docRecord.member_role,
+    docId: record.id,
+    targetKind: target.kind,
+    orgId: record.resolved_org_id,
+    workspaceId: record.workspace_id,
+    role: record.member_role,
   };
 }
 
@@ -172,12 +202,15 @@ const hocuspocus = new Hocuspocus({
   },
 
   async onLoadDocument(data) {
-    const docId = data.context?.docId ?? parseDocumentId(data.documentName);
-    if (!docId) {
+    const target = parseCollabTarget(data.documentName);
+    if (!target) {
       throw new Error('Invalid document identifier');
     }
 
-    const result = await db.query('SELECT yjs_state, content FROM documents WHERE id = $1', [docId]);
+    const result = await db.query(
+      `SELECT yjs_state, content FROM ${target.table} WHERE id = $1`,
+      [target.id]
+    );
     if (result.rows.length === 0) {
       throw new Error('Document not found');
     }
@@ -186,21 +219,28 @@ const hocuspocus = new Hocuspocus({
     if (row.yjs_state && row.yjs_state.length > 0) {
       Y.applyUpdate(data.document, new Uint8Array(row.yjs_state));
     } else if (row.content) {
-      seedDocumentContent(data.document, row.content);
+      if (target.kind === 'code_file') {
+        seedCodeContent(data.document, row.content);
+      } else {
+        seedDocumentContent(data.document, row.content);
+      }
     }
   },
 
   async onStoreDocument(data) {
-    const docId = data.lastContext?.docId ?? parseDocumentId(data.documentName);
-    if (!docId) return;
+    const target = parseCollabTarget(data.documentName);
+    if (!target) return;
 
     const encodedState = Buffer.from(Y.encodeStateAsUpdate(data.document));
-    const plainText = extractPlainText(data.document);
+    const plainText =
+      target.kind === 'code_file'
+        ? data.document.getText('monaco').toString()
+        : extractPlainText(data.document);
 
     await trackSave(
       db.query(
-        'UPDATE documents SET yjs_state = $1, content = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
-        [encodedState, plainText, docId]
+        `UPDATE ${target.table} SET yjs_state = $1, content = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3`,
+        [encodedState, plainText, target.id]
       )
     );
   },
@@ -261,6 +301,10 @@ function attachCollabServer(httpServer) {
 
 function closeDocumentConnections(docId) {
   hocuspocus.closeConnections(`doc:${docId}`);
+}
+
+function closeCodeConnections(fileId) {
+  hocuspocus.closeConnections(`code:${fileId}`);
 }
 
 function getLiveDocumentSnapshot(docId) {
@@ -336,10 +380,13 @@ async function flushCollabStores() {
 module.exports = {
   attachCollabServer,
   closeDocumentConnections,
+  closeCodeConnections,
   getLiveDocumentSnapshot,
   restoreDocumentSnapshot,
   flushCollabStores,
   parseDocumentId,
+  parseCollabTarget,
   extractPlainText,
   seedDocumentContent,
+  seedCodeContent,
 };

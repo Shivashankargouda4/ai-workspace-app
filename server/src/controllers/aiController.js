@@ -10,6 +10,33 @@ const actionItemsSchema = z.object({
   text: z.string().min(10, 'Text must be at least 10 characters long'),
 });
 
+const explainCodeSchema = z.object({
+  code: z.string().min(5, 'Code must be at least 5 characters long').max(40000),
+  language: z.string().trim().max(50).optional().default('javascript'),
+  mode: z.enum(['explain', 'review']).optional().default('explain'),
+});
+
+async function callGemini(prompt) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey || apiKey.trim().length <= 10) return null;
+
+  try {
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const response = await fetch(geminiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+      }),
+    });
+    const geminiData = await response.json();
+    return geminiData.candidates?.[0]?.content?.parts?.[0]?.text || null;
+  } catch (err) {
+    console.warn('Gemini call failed, falling back cleanly:', err.message);
+    return null;
+  }
+}
+
 // Summarize text or document
 const summarize = async (req, res) => {
   try {
@@ -148,7 +175,58 @@ const extractActionItems = async (req, res) => {
   }
 };
 
+const explainCode = async (req, res) => {
+  try {
+    const { code, language, mode } = explainCodeSchema.parse(req.body);
+    const taskPrompt =
+      mode === 'review'
+        ? `Review the following ${language} code for potential bugs, edge cases, security risks, and cleanliness improvements in 4-6 concise bullet points:\n\n${code}`
+        : `Explain clearly what the following ${language} code does, step by step, in 4-5 concise bullet points:\n\n${code}`;
+
+    const aiText = await callGemini(taskPrompt);
+    if (aiText) {
+      return res.json({
+        analysis: aiText,
+        source: 'Google Gemini 1.5 Flash',
+        mode,
+      });
+    }
+
+    // Deterministic static-analysis fallback when no Gemini key or offline
+    const lines = code.split(/\r?\n/);
+    const nonEmpty = lines.filter((l) => l.trim() && !l.trim().startsWith('//') && !l.trim().startsWith('#'));
+    const defs = code.match(/(?:function\s+\w+|def\s+\w+|class\s+\w+|const\s+\w+\s*=\s*(?:async\s*)?\()/g) || [];
+    const hasAsync = /\b(async|await|Promise)\b/.test(code);
+    const hasTryCatch = /\b(try|catch|except)\b/.test(code);
+
+    const bullets = [
+      `• Language & Size: ${language.toUpperCase()} snippet with ${lines.length} total lines (${nonEmpty.length} executable lines).`,
+      defs.length > 0
+        ? `• Symbols Detected (${defs.length}): ${defs.slice(0, 5).map((s) => s.replace(/\s*\($/, '')).join(', ')}.`
+        : '• Top-level script block with sequential execution flow.',
+      mode === 'review'
+        ? hasAsync && !hasTryCatch
+          ? '• Error Handling Check: Asynchronous code detected without visible try/catch — wrap awaits or handle rejections.'
+          : '• Error Handling & Cleanliness: Add explicit input validation and edge-case tests around boundary inputs.'
+        : `• Execution Notes: Executes inside isolated browser sandbox / WebAssembly runtime (${hasAsync ? 'uses async operations' : 'synchronous logic'}).`,
+    ];
+
+    res.json({
+      analysis: bullets.join('\n'),
+      source: 'Static Analyzer Fallback (Set GEMINI_API_KEY in .env for deep LLM review)',
+      mode,
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors[0].message });
+    }
+    console.error('AI explain code error:', error);
+    res.status(500).json({ error: 'Failed to analyze code.' });
+  }
+};
+
 module.exports = {
   summarize,
   extractActionItems,
+  explainCode,
 };

@@ -109,3 +109,31 @@ body {
   white-space: nowrap;
   z-index: 20;
 }
+
+/* Collaborative Monaco Code Studio Remote Carets */
+.yRemoteSelection {
+  background-color: rgba(79, 70, 229, 0.22);
+}
+
+.yRemoteSelectionHead {
+  position: relative;
+  border-left: 2px solid #818cf8;
+  box-sizing: border-box;
+}
+
+.yRemoteSelectionHead::after {
+  content: 'Peer';
+  position: absolute;
+  top: -16px;
+  left: -2px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #ffffff;
+  background-color: #4f46e5;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 20;
+}

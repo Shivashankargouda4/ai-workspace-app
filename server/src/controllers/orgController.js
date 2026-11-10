@@ -110,6 +110,15 @@ const createOrg = async (req, res) => {
       [defaultWorkspace.id, newOrg.id, req.user.id]
     );
 
+    // Create default starter collaborative code files
+    await client.query(
+      `INSERT INTO code_files (workspace_id, org_id, path, language, content, created_by)
+       VALUES
+         ($1, $2, 'src/main.js', 'javascript', E'// Collaborative Code Studio (JS Sandbox)\nconst greeting = "Hello from Collaborative Code Studio!";\nconsole.log(greeting);\nconsole.log("2 + 2 =", 2 + 2);', $3),
+         ($1, $2, 'src/hello.py', 'python', E'# Collaborative Python File\ndef greet(team: str) -> str:\n    return f"Welcome to {team} Code Studio!"\n\nprint(greet("Workspace"))', $3)`,
+      [defaultWorkspace.id, newOrg.id, req.user.id]
+    );
+
     await client.query('COMMIT');
 
     res.status(201).json({

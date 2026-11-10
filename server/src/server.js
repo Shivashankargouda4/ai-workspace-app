@@ -20,6 +20,8 @@ const analyticsRoutes = require('./routes/analytics');
 const fileRoutes = require('./routes/files');
 const docRoutes = require('./routes/docs');
 const notificationRoutes = require('./routes/notifications');
+const codeRoutes = require('./routes/code');
+const meetingRoutes = require('./routes/meetings');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -70,6 +72,8 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/files', fileRoutes);
 app.use('/api/docs', docRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/code', codeRoutes);
+app.use('/api/meetings', meetingRoutes);
 
 // Serve static React client if built (Single-Origin / Mobile Tunnel / Production mode)
 const distPath = path.resolve(__dirname, '../../client/dist');

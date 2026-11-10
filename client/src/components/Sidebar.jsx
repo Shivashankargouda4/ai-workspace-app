@@ -5,6 +5,8 @@ import {
   KanbanSquare,
   MessageSquare,
   FileText,
+  Code2,
+  Video,
   FolderOpen,
   BarChart3,
   Users,
@@ -15,6 +17,8 @@ const navItems = [
   { name: 'Kanban', shortName: 'Kanban', path: '/kanban', icon: KanbanSquare },
   { name: 'Chat', shortName: 'Chat', path: '/chat', icon: MessageSquare },
   { name: 'Documents', shortName: 'Docs', path: '/documents', icon: FileText },
+  { name: 'Code Studio', shortName: 'Code', path: '/code', icon: Code2 },
+  { name: 'Meetings', shortName: 'Meet', path: '/meet', icon: Video },
   { name: 'Files', shortName: 'Files', path: '/files', icon: FolderOpen },
   { name: 'Analytics', shortName: 'Stats', path: '/analytics', icon: BarChart3 },
   { name: 'Team', shortName: 'Team', path: '/team', icon: Users, desktopOnly: true },
@@ -62,7 +66,7 @@ export default function Sidebar() {
       </aside>
 
       {/* Mobile Bottom Navigation Bar (< 768px, 390px phone screen) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-sm border-t border-slate-800 flex justify-around items-center py-2 px-1 shadow-2xl">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-sm border-t border-slate-800 flex justify-around items-center gap-1 py-2 px-2 overflow-x-auto shadow-2xl">
         {navItems.filter((item) => !item.desktopOnly).map((item) => {
           const Icon = item.icon;
           return (
@@ -71,14 +75,14 @@ export default function Sidebar() {
               to={item.path}
               end={item.path === '/'}
               className={({ isActive }) =>
-                `flex flex-col items-center gap-1 py-1 px-2 rounded-lg text-[10px] font-medium transition ${
+                `flex flex-col items-center shrink-0 gap-1 py-1 px-2 rounded-lg text-[10px] font-medium transition ${
                   isActive
                     ? 'text-brand-400 font-semibold'
                     : 'text-slate-400 hover:text-slate-200'
                 }`
               }
             >
-              <Icon className="w-5 h-5" />
+              <Icon className="w-4 h-4" />
               <span>{item.shortName || item.name}</span>
             </NavLink>
           );

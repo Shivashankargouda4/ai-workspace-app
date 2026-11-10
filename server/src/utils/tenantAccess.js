@@ -45,6 +45,20 @@ const RESOURCE_QUERIES = {
     JOIN organization_members om ON om.org_id = w.org_id
     WHERE d.id = $1 AND om.user_id = $2
   `,
+  code_file: `
+    SELECT cf.*, w.org_id AS resolved_org_id, om.role AS member_role
+    FROM code_files cf
+    JOIN workspaces w ON cf.workspace_id = w.id
+    JOIN organization_members om ON om.org_id = w.org_id
+    WHERE cf.id = $1 AND om.user_id = $2
+  `,
+  meeting: `
+    SELECT m.*, w.org_id AS resolved_org_id, om.role AS member_role
+    FROM meetings m
+    JOIN workspaces w ON m.workspace_id = w.id
+    JOIN organization_members om ON om.org_id = w.org_id
+    WHERE m.id = $1 AND om.user_id = $2
+  `,
 };
 
 /**
