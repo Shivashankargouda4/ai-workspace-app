@@ -23,18 +23,16 @@ async function runAiTests() {
   console.log('==================================================\n');
 
   try {
-    // 1. Login with test account (admin@workspace.local or fallback)
+    // 1. Login with demo account (password must be supplied via DEMO_PASSWORD env var)
+    const demoPassword = process.env.DEMO_PASSWORD;
+    if (!demoPassword) {
+      throw new Error('DEMO_PASSWORD environment variable is not set. Run: $env:DEMO_PASSWORD = Read-Host "Demo password"');
+    }
     console.log('1. Authenticating test user...');
     let login = await req('POST', '/auth/login', {
       email: 'admin@workspace.local',
-      password: 'password123',
+      password: demoPassword,
     });
-    if (login.status !== 200) {
-      login = await req('POST', '/auth/login', {
-        email: 'test@example.com',
-        password: 'Test@12345',
-      });
-    }
     if (login.status !== 200) throw new Error('Login failed: ' + JSON.stringify(login.data));
     const token = login.data.accessToken;
     console.log('   ✅ Authenticated successfully.\n');

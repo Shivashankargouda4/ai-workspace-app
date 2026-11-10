@@ -163,22 +163,37 @@ const updateTaskStatus = async (req, res) => {
     // Call ML Microservice to forecast delay risk and persist in task_predictions
     try {
       const mlUrl = process.env.ML_SERVICE_URL || 'http://127.0.0.1:8000';
-      const mlResponse = await fetch(`${mlUrl}/predict`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          priority: updatedTask.priority || 'medium',
-          complexity: updatedTask.complexity || 3,
-          estimated_days: updatedTask.estimated_days || 3,
-          team_size: 2,
-          assignee_workload: 3,
-          previous_delays_ratio: 0.2,
-          midpoint_progress: newProgress,
-        }),
-      });
+      const mlAbortController = new AbortController();
+      const mlTimeout = setTimeout(() => mlAbortController.abort(), 5000); // 5-second timeout
+      let mlResponse;
+      let mlData = null;
 
-      if (mlResponse.ok) {
-        const mlData = await mlResponse.json();
+      try {
+        mlResponse = await fetch(`${mlUrl}/predict`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: mlAbortController.signal,
+          body: JSON.stringify({
+            priority: updatedTask.priority || 'medium',
+            complexity: updatedTask.complexity || 3,
+            estimated_days: updatedTask.estimated_days || 3,
+            team_size: 2,
+            assignee_workload: 3,
+            previous_delays_ratio: 0.2,
+            midpoint_progress: newProgress,
+          }),
+        });
+
+        if (mlResponse.ok) {
+          mlData = await mlResponse.json();
+        } else {
+          console.warn('ML service returned non-200:', mlResponse.status);
+        }
+      } finally {
+        clearTimeout(mlTimeout);
+      }
+
+      if (mlData) {
         const existingPred = await client.query('SELECT id FROM task_predictions WHERE task_id = $1', [taskId]);
         if (existingPred.rows.length > 0) {
           await client.query(
@@ -194,8 +209,6 @@ const updateTaskStatus = async (req, res) => {
             [taskId, mlData.delay_probability, mlData.risk_level, mlData.model_version]
           );
         }
-      } else {
-        console.warn('ML service returned non-200:', mlResponse.status);
       }
     } catch (mlErr) {
       console.warn('ML dispatch notice:', mlErr.message);

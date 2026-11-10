@@ -26,23 +26,14 @@ async function runFileTests() {
   try {
     // 1. Authenticate user
     console.log('1. Authenticating test user (admin@workspace.local)...');
-    const demoPassword = process.env.DEMO_PASSWORD || 'password123';
+    const demoPassword = process.env.DEMO_PASSWORD;
+    if (!demoPassword) {
+      throw new Error('DEMO_PASSWORD environment variable is not set. Run: $env:DEMO_PASSWORD = Read-Host "Demo password"');
+    }
     let login = await req('POST', '/auth/login', {
       email: 'admin@workspace.local',
       password: demoPassword,
     });
-    if (login.status !== 200) {
-      login = await req('POST', '/auth/login', {
-        email: 'alice@example.com',
-        password: 'password123',
-      });
-    }
-    if (login.status !== 200) {
-      login = await req('POST', '/auth/login', {
-        email: 'test@example.com',
-        password: 'Test@12345',
-      });
-    }
     if (login.status !== 200) throw new Error('Login failed: ' + JSON.stringify(login.data));
     const token = login.data.accessToken;
     console.log('   ✅ Authenticated successfully.\n');

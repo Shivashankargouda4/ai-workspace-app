@@ -10,7 +10,10 @@ async function verifyDragAudit() {
   try {
     // 1. Log in as Admin
     console.log('1. Authenticating Admin (admin@workspace.local)...');
-    const demoPassword = process.env.DEMO_PASSWORD || 'password123';
+    const demoPassword = process.env.DEMO_PASSWORD;
+    if (!demoPassword) {
+      throw new Error('DEMO_PASSWORD environment variable is not set. Run: $env:DEMO_PASSWORD = Read-Host "Demo password"');
+    }
     let loginRes = await fetch(`${API}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
