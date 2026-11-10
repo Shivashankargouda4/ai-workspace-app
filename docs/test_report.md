@@ -23,15 +23,16 @@
 
 This report contains only the tests that have been written, automated, and executed against the running system. Every check corresponds to an explicit assertion on HTTP status codes or return payloads.
 
-| Test File | Target Module | Executable Assertions | Verified Terminal Exit Code | Status |
+| Test File | Target Module | Executable Checks | Verified Terminal Exit Code | Status |
 | :--- | :--- | :---: | :---: | :---: |
-| [`test_auth.js`](file:///C:/Users/brshi/OneDrive/Desktop/shivu/workspace-app/server/test_auth.js) | Authentication & Tokens | 6 | Code 0 | **VERIFIED (PASS)** |
-| [`test_multitenancy.js`](file:///C:/Users/brshi/OneDrive/Desktop/shivu/workspace-app/server/test_multitenancy.js) | Tenant Isolation & RBAC | 10 | Code 0 | **VERIFIED (PASS)** |
-| [`test_ai.js`](file:///C:/Users/brshi/OneDrive/Desktop/shivu/workspace-app/server/test_ai.js) | AI Assistant & NLP | 4 | Code 0 | **VERIFIED (PASS)** |
-| [`test_analytics.js`](file:///C:/Users/brshi/OneDrive/Desktop/shivu/workspace-app/server/test_analytics.js) | SQL Aggregation & Metrics | 5 | Code 0 | **VERIFIED (PASS)** |
-| [`test_files.js`](file:///C:/Users/brshi/OneDrive/Desktop/shivu/workspace-app/server/test_files.js) | Secure File Repository | 4 | Code 0 | **VERIFIED (PASS)** |
-| [`test_predict.py`](file:///C:/Users/brshi/OneDrive/Desktop/shivu/workspace-app/ml-service/test_predict.py) | ML Delay Risk Classifier | 2 | Code 0 | **VERIFIED (PASS)** |
-| **Total Verified** | | **31 Checks** | **Zero Failures** | **100% PASS** |
+| `server/test_auth.js` | Authentication & Tokens | 6 | Code 0 | **VERIFIED (PASS)** |
+| `server/test_multitenancy.js` | Organization RBAC & Invitations | 10 | Code 0 | **VERIFIED (PASS)** |
+| `server/test_analytics.js` | SQL Aggregation & Metrics | 5 | Code 0 | **VERIFIED (PASS)** |
+| `server/test_ai.js` | Rule-Based AI Assistant & Optional Gemini | 4 | Code 0 | **VERIFIED (PASS)** |
+| `server/test_files.js` | Secure File Repository (`multer@2.5.0`) | 4 | Code 0 | **VERIFIED (PASS)** |
+| `server/test_tenant_tasks.js` | Cross-Tenant Tasks, Chat, Files & Socket.IO | 5 | Code 0 | **VERIFIED (PASS)** |
+| `ml-service/test_predict.py` | ML Delay Risk Classifier | 2 | Code 0 | **VERIFIED (PASS)** |
+| **Total Verified** | | **36 Checks (7 Suites)** | **Zero Failures** | **100% PASS** |
 
 ---
 
@@ -62,35 +63,40 @@ This report contains only the tests that have been written, automated, and execu
   *Evidence:* Middleware compares `roleWeights['member'] (1)` vs `roleWeights['admin'] (3)` and aborts with HTTP 403.
 
 ### Test Suite 3: AI Assistant (`server/test_ai.js`)
-- **Assertion 3.1 (Unauthenticated Block):** `assert(res.status === 401)` when accessing `/api/ai/summarize` without a bearer token.
-- **Assertion 3.2 (Text Summarization):** `assert(res.status === 200 && res.data.summary.length > 20)`. Parses 5 paragraphs and returns 3 concise bullet points.
-- **Assertion 3.3 (Structured Action Extraction):** `assert(res.status === 200 && Array.isArray(res.data.action_items))`. Extracts tasks, priorities, and deadlines into JSON.
+- **Assertion 3.1 (Summarization & Decimal Integrity):** Sends sprint text containing `89.3%` and `94.5%` to `POST /api/ai/summarize`; verifies `source: 'Local Extractive Engine...'` and confirms decimal percentages are not truncated at `.`.
+- **Assertion 3.2 (Action Item Extraction):** `POST /api/ai/action-items` returns structured JSON items (`title`, `priority`, `estimated_days`) with `source: 'Heuristic Engine...'`.
+- **Assertion 3.3 & 3.4 (Auth Setup & Missing-Token Block):** Authenticates `admin@workspace.local` and confirms unauthenticated `/api/ai/summarize` returns HTTP 401.
 
 ### Test Suite 4: SQL Analytics (`server/test_analytics.js`)
 - **Assertion 4.1 (Unauthenticated Block):** `assert(res.status === 401)` on `/api/analytics/overview/1`.
-- **Assertion 4.2 (Live SQL Aggregation):** `assert(res.status === 200)`.  
-  *Evidence from Live DB Output:*
-  - Total Tasks: 4
-  - Completed Tasks: 1
-  - Completion Rate: 25% (Computed as `Math.round((1 / 4) * 100)`)
-  - Status Breakdown: `done: 1`, `in_progress: 1`, `todo: 2`
-  - Priority Breakdown: `high: 3`, `medium: 1`
-  - Member Workload: `Admin Shiva: 2`, `Rahul Member: 1`, `Priya Manager: 1`
-- **Assertion 4.3 (Tenant Guard):** `assert(res.status === 403)` when querying Org 999999.
+- **Assertion 4.2–4.4 (Setup & Live SQL Aggregation):** Registers temporary user, grants Org 1 membership, and verifies `GET /api/analytics/overview/1` returns HTTP 200 with live SQL summary, status/priority distribution, member workload, and ML risk predictions.
+- **Assertion 4.5 (Tenant Guard):** `assert(res.status === 403)` when querying non-member Org 999999.
 
 ### Test Suite 5: Secure File Repository (`server/test_files.js`)
-- **Assertion 5.1 (Multipart Upload):** `assert(res.status === 201 && res.data.file.id)`. Stores file in `server/uploads/` with UUID-timestamped name and validates MIME type.
-- **Assertion 5.2 (Workspace File Listing):** `assert(res.status === 200 && res.data.files.length >= 1)`.
+- **Assertion 5.1 (Multipart Upload):** `assert(res.status === 201 && res.data.file.id)` using `multer@2.5.0`. Stores file in `server/uploads/` with unique sanitized filename and validates MIME whitelist.
+- **Assertion 5.2 (Workspace File Listing):** `assert(res.status === 200 && res.data.files.length >= 1)` for Workspace 1.
 - **Assertion 5.3 (Authenticated Download):** `assert(res.status === 200 && downloadedText === originalContent)`. Verifies binary integrity.
 - **Assertion 5.4 (Unauthenticated Download Block):** `assert(res.status === 401)`.
 
-### Test Suite 6: ML Delay Prediction (`ml-service/test_predict.py`)
+### Test Suite 6: Cross-Tenant Resource Isolation (`server/test_tenant_tasks.js`)
+*(Hardening note: this test initially exposed a 0/5 gap where sub-routes checked authentication only and `downloadFile` hardcoded `orgId = 1`. After adding the shared `resolveAuthorizedResource` helper in `server/src/utils/tenantAccess.js`, all 5 checks pass 5/5.)*
+- **Check 6.1 (Read Tasks):** User B (Org B) requesting `GET /api/tasks/project/:projectAId` receives HTTP `404`.
+- **Check 6.2 (Write Tasks):** User B calling `POST /api/tasks` into Project A and `PATCH /api/tasks/:taskAId/status` receives HTTP `404` on both.
+- **Check 6.3 (Chat REST):** User B requesting `GET /api/chat/channels/:wsAId` and `GET /api/chat/messages/:channelAId` receives HTTP `404` on both.
+- **Check 6.4 (Files With Spoofed `orgId`):** User B uploading to Workspace A (even with `orgId = orgBId` spoofed), listing Workspace A files, and downloading File A all receive HTTP `404`, while legitimate Owner User A downloads File A with HTTP `200`.
+- **Check 6.5 (Socket.IO Isolation):** User B attempting `channel:join` on Channel A does not receive User A's `message:new` broadcast, and User B's `message:send` fails to write to `messages` (`cnt === 1`).
+
+### Test Suite 7: ML Delay Prediction (`ml-service/test_predict.py`)
 - **High-Risk Case:**
   - Input: Complexity=8, Workload=6, Progress@Midpoint=20%, Priority=High.
-  - Result: `delay_probability = 0.9967 (99.7%)`, `risk_level = "high"`.
+  - Result: `delay_probability = 0.9967 (99.7%)`, `risk_level = "HIGH [RED]"`.
 - **Low-Risk Case:**
   - Input: Complexity=2, Workload=1, Progress@Midpoint=60%, Priority=Low.
-  - Result: `delay_probability = 0.0321 (3.2%)`, `risk_level = "low"`.
+  - Result: `delay_probability = 0.0321 (3.2%)`, `risk_level = "LOW [GREEN]"`.
+
+### Live Verification: ML Graceful Degradation & Chrome Kanban Drag
+- **ML Down (Uvicorn Stopped):** Dragging Task 3 (`todo → review`) in Chrome still committed to PostgreSQL and appended `task_status_history` Row `36` (`2026-11-10 13:19:52`) with zero crash or error page.
+- **ML Restored:** Running `test_drag_audit.js` after restarting Uvicorn appended Row `37` (`done → in_progress`) and updated `task_predictions` (`0.027 low`) at the exact same transaction timestamp (`2026-11-10 13:26:39.668418+05:30`).
 
 ---
 
@@ -108,16 +114,16 @@ This report contains only the tests that have been written, automated, and execu
 > *"Proprietary software companies do not publish internal sprint velocity and delay records due to confidentiality. More importantly, I had no time for a real-world multi-team pilot during the semester build timeline, so the logical next step is collecting data from real teams. Real data would introduce noisy human factors, shifting client requirements, and uneven task difficulty."*
 
 ### Q3: How do you stop one organization from seeing another's data?
-> *"Foreign keys and indexes maintain referential consistency, but they do NOT isolate tenants. True isolation is enforced because every database query explicitly filters by `org_id`, and the `requireRole` middleware checks that `req.user.id` is an active member of `org_id` before executing any query. Our 10 automated multi-tenancy tests provide concrete proof that cross-tenant requests consistently receive HTTP 403 Forbidden."*
+> *"Foreign keys and indexes maintain referential consistency, but they do NOT isolate tenants. The JWT carries only `userId`. On organization and analytics routes, `requireRole` verifies `organization_members` (HTTP 403 on mismatch). On tasks, channels, messages, files, and Socket.IO (`channel:join` and every `message:send`), our shared helper `resolveAuthorizedResource` in `tenantAccess.js` resolves the target organization through the resource's workspace in PostgreSQL — ignoring client-supplied org IDs — checks `organization_members`, and returns HTTP 404 across tenants. Writing `test_tenant_tasks.js` first exposed a 0/5 gap, which this helper closed to 5/5."*
 
 ### Q4: How does real-time chat remain consistent after a network disconnect?
-> *"We implement a **persist-then-broadcast** architecture. When a user sends a message via Socket.IO, the Node.js server synchronously inserts the record into PostgreSQL's `messages` table and obtains its database-generated sequence ID and UTC timestamp *before* emitting the message to the channel room. If a client disconnects and reconnects, it retrieves historical messages directly from PostgreSQL via `GET /api/chat/channels/:channelId/messages`."*
+> *"We implement a **persist-then-broadcast** architecture. When an authorized user sends a message via Socket.IO, the Node.js server re-verifies channel organization membership, synchronously inserts the record into PostgreSQL's `messages` table with its sequence ID and UTC timestamp, and *then* emits `message:new` to the channel room. After disconnecting or refreshing (`F5`), the client retrieves history directly from PostgreSQL via `GET /api/chat/messages/:channelId`."*
 
-### Q5: How does the AI Assistant avoid leaking private documents?
-> *"The assistant currently only processes text that the user explicitly provides in the input prompt. There is no automated document retrieval (RAG) yet. If I add document search in the future, permission and tenant filtering must happen before sending any retrieved context to the language model. Furthermore, the Gemini API key is stored exclusively on the server in `.env` and is never sent to the browser."*
+### Q5: What does the AI Assistant actually do and how does it avoid leaking documents?
+> *"Because `GEMINI_API_KEY` is unset in our demo `.env`, the assistant runs rule-based extractive summarization (`Local Extractive Engine`) and heuristic action-item extraction (`Heuristic Engine`) directly on prompt text. Configuring a server-side `GEMINI_API_KEY` enables Google Gemini through the API without exposing any key to the browser, and if a stored `document_id` is passed, `aiController.js` checks `organization_members` first."*
 
-### Q6: How are user passwords hashed in the backend?
-> *"Passwords are hashed using `bcryptjs` with **12 salt rounds** (`await bcrypt.genSalt(12)` in `authController.js`), producing industry-standard `$2a$12$` hashes that resist brute-force dictionary attacks."*
+### Q6: How are user passwords and login endpoints protected?
+> *"Passwords are hashed using `bcryptjs` with **12 salt rounds** (`await bcrypt.genSalt(12)` in `authController.js`), and `/api/auth/login` plus `/api/auth/register` are protected by `express-rate-limit` (`skipSuccessfulRequests: true`), which rate-limits repeated failed attempts with HTTP 429 without locking out legitimate users."*
 
 ---
 
@@ -126,5 +132,5 @@ This report contains only the tests that have been written, automated, and execu
 In the interest of academic integrity, the following limitations are explicitly documented:
 1. **Synthetic Machine Learning Data:** The 3,000-record dataset was generated probabilistically; models reflect synthetic pipeline behavior rather than real-world task dynamics.
 2. **Collaborative Document Editing:** Shared rich-text editing (Yjs / CRDT) was deferred to future scope to focus on multi-tenant access control, real-time messaging, and delay forecasting.
-3. **AI Document Retrieval:** The AI Assistant operates on user-submitted text prompts; full-text semantic search (RAG) over uploaded workspace files is planned for future iterations.
-4. **Mobile Delivery:** Mobile access is delivered via an installable Progressive Web App (PWA) with manifest and service worker, rather than a compiled native Android APK.
+3. **AI Document Retrieval:** Without a Gemini API key, the AI Assistant uses rule-based extractive and heuristic engines on submitted text; full-text semantic search (RAG) over uploaded workspace files is future work.
+4. **Mobile Delivery, Localization & Load Testing:** Mobile access is delivered via an installable Progressive Web App (PWA) with manifest and service worker, rather than a compiled native Android APK; the UI is English-only with no multi-language localization; concurrency load testing remains future work.

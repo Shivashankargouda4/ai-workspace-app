@@ -17,16 +17,16 @@ graph TD
         SocketClient["Socket.IO Client<br/>(Bidirectional Event Bus)"]
     end
 
-    subgraph GatewayLayer ["Reverse Proxy & Security"]
-        Nginx["Nginx / Express Gateway<br/>(Helmet, Rate-Limiting, CORS)"]
-        JWTAuth["JWT Verification Middleware<br/>(RBAC: Admin, Manager, Member)"]
+    subgraph GatewayLayer ["Security & Access Control"]
+        Gateway["Express Security Layer<br/>(Helmet, Rate-Limiting, CORS)"]
+        JWTAuth["JWT & Tenant Access Layer<br/>(requireAuth, requireRole, tenantAccess.js)"]
     end
 
     subgraph ServiceLayer ["Backend Service Layer"]
-        ExpressApp["Express.js REST API Server<br/>(Node.js v24 LTS)"]
-        SocketServer["Socket.IO WebSocket Server<br/>(Room-based Multicast)"]
-        AIController["AI Assistant Service<br/>(Gemini Flash API + NLP Fallback)"]
-        FileService["Secure File Storage Engine<br/>(Multer + MIME Whitelist)"]
+        ExpressApp["Express.js REST API Server<br/>(Node.js LTS)"]
+        SocketServer["Socket.IO WebSocket Server<br/>(Membership-Checked Channel Rooms)"]
+        AIController["AI Assistant Service<br/>(Rule-Based Extractive/Heuristic + Optional Gemini API)"]
+        FileService["Secure File Storage Engine<br/>(Multer v2.5 + MIME Whitelist)"]
     end
 
     subgraph MLLayer ["Predictive Analytics Microservice"]
@@ -35,14 +35,14 @@ graph TD
     end
 
     subgraph PersistenceLayer ["Data & Storage Layer"]
-        Postgres[("PostgreSQL 18 Relational DB<br/>(16 Normalized Tables, Multi-Tenant)")]
-        DiskStorage[("Encrypted Local File Storage<br/>(uploads/ directory)")]
+        Postgres[("PostgreSQL 18 Relational DB<br/>(18 Normalized Tables, Multi-Tenant)")]
+        DiskStorage[("Local File Storage<br/>(server/uploads/ directory)")]
     end
 
-    Browser --> Nginx
-    PWA --> Nginx
+    Browser --> Gateway
+    PWA --> Gateway
     SocketClient <--> SocketServer
-    Nginx --> JWTAuth
+    Gateway --> JWTAuth
     JWTAuth --> ExpressApp
     ExpressApp --> Postgres
     ExpressApp <--> FastAPI
@@ -59,8 +59,13 @@ graph TD
 erDiagram
     USERS ||--o{ ORGANIZATION_MEMBERS : "joins"
     ORGANIZATIONS ||--o{ ORGANIZATION_MEMBERS : "contains"
+    ORGANIZATIONS ||--o{ DEPARTMENTS : "organizes"
+    ORGANIZATIONS ||--o{ INVITATIONS : "issues"
     ORGANIZATIONS ||--o{ WORKSPACES : "owns"
+    WORKSPACES ||--o{ WORKSPACE_MEMBERS : "assigns"
+    USERS ||--o{ WORKSPACE_MEMBERS : "participates"
     WORKSPACES ||--o{ PROJECTS : "groups"
+    WORKSPACES ||--o{ DOCUMENTS : "reserves"
     PROJECTS ||--o{ TASKS : "tracks"
     TASKS ||--o{ TASK_ASSIGNEES : "assigned_to"
     USERS ||--o{ TASK_ASSIGNEES : "works_on"
@@ -230,22 +235,21 @@ sequenceDiagram
     participant DB as PostgreSQL 18
     participant ML as FastAPI ML Service (Port 8000)
 
-    User->>Client: Create / Update Task (Complexity, Workload, Due Date)
-    Client->>Server: POST /api/tasks (JWT Auth Header)
-    Server->>Server: Verify JWT & Org Membership (RBAC)
-    Server->>DB: INSERT INTO tasks (...) RETURNING id
-    DB-->>Server: Task Created (id: 42)
-    Server->>DB: INSERT INTO task_status_history (task_id, new_status, ...)
+    User->>Client: Drag card / Move task to new status
+    Client->>Server: PATCH /api/tasks/:taskId/status (JWT Auth Header)
+    Server->>DB: Resolve task via workspace & check organization_members (tenantAccess.js)
+    Server->>DB: BEGIN + UPDATE tasks + INSERT INTO task_status_history
 
-    opt ML Delay Forecast Trigger
+    opt ML Delay Forecast Dispatch (5s Timeout + Graceful Fallback)
         Server->>ML: POST /predict {priority, complexity, estimated_days, ...}
         ML->>ML: Pipeline Scaler + Random Forest Model
-        ML-->>Server: 200 OK {delay_probability: 0.88, risk_level: "high"}
-        Server->>DB: INSERT INTO task_predictions (task_id, delay_probability, risk_level)
+        ML-->>Server: 200 OK {delay_probability, risk_level, model_version}
+        Server->>DB: INSERT/UPDATE task_predictions
     end
 
-    Server-->>Client: 201 Created {task, prediction: {risk_level: "high"}}
-    Client-->>User: Render task card on Kanban with Red High-Risk Badge
+    Server->>DB: COMMIT
+    Server-->>Client: 200 OK {task}
+    Client-->>User: Persist card in destination column & show toast
 ```
 
 ---
@@ -262,14 +266,14 @@ sequenceDiagram
     participant ClientB as Bob Browser (Socket.IO)
     actor Bob as User Bob (Recipient)
 
-    Alice->>ClientA: Types and sends message: "Sprint review tomorrow at 10 AM"
-    ClientA->>WS: socket.emit("send_message", {channelId: 1, content: "..."})
-    WS->>WS: Verify Token & Channel Membership
+    Alice->>ClientA: Sends message in channel: "Sprint review tomorrow at 10 AM"
+    ClientA->>WS: socket.emit("message:send", {channelId: 1, content: "..."})
+    WS->>DB: Verify JWT & channel membership via tenantAccess.js
     WS->>DB: INSERT INTO messages (channel_id, user_id, content) VALUES (...)
-    DB-->>WS: Message saved with ID & Timestamp
-    WS->>ClientA: socket.emit("receive_message", savedMsg)
-    WS->>ClientB: socket.to("channel_1").emit("receive_message", savedMsg)
-    ClientB-->>Bob: UI displays incoming message instantly (< 50ms)
+    DB-->>WS: Message saved with ID & UTC Timestamp
+    WS->>ClientA: io.to("channel:1").emit("message:new", savedMsg)
+    WS->>ClientB: io.to("channel:1").emit("message:new", savedMsg)
+    ClientB-->>Bob: UI displays incoming message without refresh
 ```
 
 ---
@@ -283,15 +287,15 @@ flowchart TD
     User([Authenticated User])
     System[[AI-Powered Real-Time Collaborative Workspace]]
     MLService[[FastAPI ML Delay Predictor]]
-    GeminiAPI[[Gemini AI Assistant]]
-    DBServer[(PostgreSQL Database)]
+    AIService[[Rule-Based NLP / Optional Gemini API]]
+    DBServer[(PostgreSQL 18 - 18 Tables)]
 
     User -- "Login credentials, task events, chat messages, file uploads" --> System
     System -- "Auth tokens, live board updates, alerts, analytics, summaries" --> User
     System -- "Task features (complexity, workload, progress)" --> MLService
     MLService -- "Delay probability & risk classification" --> System
-    System -- "Chat transcript / text payload" --> GeminiAPI
-    GeminiAPI -- "Executive summary & action items" --> System
+    System -- "Notes / text payload (if GEMINI_API_KEY set)" --> AIService
+    AIService -- "Executive summary & action items" --> System
     System -- "CRUD transactions & audit history" --> DBServer
     DBServer -- "Persisted records & SQL aggregations" --> System
 ```

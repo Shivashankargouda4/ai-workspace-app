@@ -26,15 +26,15 @@
   1. Build a multi-tenant workspace with strict role-based data isolation (Admin, Manager, Member).
   2. Implement bidirectional real-time communication via WebSockets with persistent message history.
   3. Train and deploy a machine learning model to predict task delay probability ($p \ge 0.70 \rightarrow \text{High Risk}$).
-  4. Integrate an AI Assistant for meeting notes summarization and structured action item extraction.
+  4. Integrate a rule-based extractive summarization and heuristic action-item extraction assistant (with optional Gemini support).
   5. Provide an installable Progressive Web App (PWA) for Android and desktop devices.
 
 ### Slide 4: System Architecture
 - Multi-tier architecture diagram:
-  - **Client:** React 18 SPA, Vite, Tailwind CSS, TanStack Query, Recharts, PWA Service Worker.
-  - **API Server:** Express.js, Socket.IO, Helmet, JWT access tokens + httpOnly refresh cookies.
-  - **ML Microservice:** Python 3.12, FastAPI, scikit-learn Pipeline (Joblib).
-  - **Database:** PostgreSQL 18 with 16 normalized tables and foreign key constraints.
+  - **Client:** React 18 SPA, Vite, Tailwind CSS, TanStack Query, Recharts, PWA Service Worker (`sw.js` app-shell cache; `/api/` always network-fresh).
+  - **API Server:** Express.js, Socket.IO, Helmet, `express-rate-limit` (`skipSuccessfulRequests: true`), JWT (`userId`-only access tokens) + `httpOnly` refresh cookies.
+  - **ML Microservice:** Python 3.12, FastAPI, scikit-learn Pipeline (Joblib) with 5-second timeout and graceful fallback.
+  - **Database:** PostgreSQL 18 with **18 normalized tables** (`001_initial_schema.sql` + `003_invitations_and_departments.sql`) and foreign key constraints.
 
 ### Slide 5: Machine Learning Methodology & Honest Findings
 - **Dataset:** 3,000 synthetic task records (probabilistic generation reflecting mid-sprint velocity).
@@ -49,29 +49,29 @@
 - **Academic Stance:** On synthetic data, the linear baseline slightly outperformed or matched Random Forest. Random Forest was retained because it handles non-linear interactions in real data and outputs feature importance, and we report honestly that it did not beat the baseline here. With real team data, we would compare them again.
 
 ### Slide 6: Database Schema & Multi-Tenant Isolation
-- 16 normalized relational tables with `TIMESTAMPTZ` UTC timestamps.
-- Audit history logging: Every Kanban status change appends a record to `task_status_history`.
-- Tenant Isolation Proof: Foreign keys keep data consistent, but true isolation is enforced by queries filtering on `org_id` and the `requireRole` middleware verifying membership before execution, proven by our 10 automated multi-tenancy tests.
+- **18 normalized relational tables** (`001_initial_schema.sql` 16 + `003_invitations_and_departments.sql` 2) with `TIMESTAMPTZ` UTC timestamps and **zero database triggers**.
+- Audit history logging: `taskController.js` inserts a row into `task_status_history` inside the `BEGIN ... COMMIT` status update transaction.
+- Tenant Isolation Proof: JWT carries only `userId`. Organization & analytics routes enforce `requireRole` (403 on mismatch); tasks, channels, messages, files, and Socket.IO handlers use `tenantAccess.js` (`resolveAuthorizedResource`) resolving org membership via workspace in PostgreSQL (404 across tenants). Proven by `test_multitenancy.js` (10 checks) and `test_tenant_tasks.js` (5 checks).
 
 ### Slide 7: Real-Time Communication & AI Assistant
-- **Chat Engine:** Socket.IO room multicast using a **persist-then-broadcast** protocol (writes to PostgreSQL before emitting).
-- **AI Assistant:** Gemini Flash API integration with deterministic local NLP fallback for offline resilience.
-- **Security Guard:** API keys remain strictly server-side in `.env`; unauthenticated calls return HTTP 401 Unauthorized.
+- **Chat Engine:** Socket.IO room multicast using a **persist-then-broadcast** protocol with org membership verified on `channel:join` and every `message:send`.
+- **AI Assistant:** Rule-based extractive summarization and heuristic action-item extraction (`Local Extractive Engine` / `Heuristic Engine`), with optional Google Gemini support when `GEMINI_API_KEY` is configured in `.env`.
+- **Security Guard:** Keys stay server-side; `/login` & `/register` enforce `express-rate-limit` (`skipSuccessfulRequests: true`); unauthenticated calls return HTTP 401.
 
 ### Slide 8: Live Demonstration Sequence
 1. **Authentication:** Log in as Admin (`admin@workspace.local`).
-2. **Dashboard & Analytics:** Live SQL aggregations (25% completion, workflow status donuts, workload bars).
-3. **AI Assistant:** Summarize a meeting transcript and extract structured action items.
-4. **Kanban & ML Risk Badges:** Drag task between columns; show risk badge and verify audit history in PostgreSQL.
-5. **Real-Time Chat:** Exchange messages across two browser sessions in `#general`.
-6. **Mobile PWA:** Inspect Service Worker and Web App Manifest in Chrome DevTools.
+2. **Kanban & ML Audit Trail:** Drag/move task between columns; show `task_status_history` and `task_predictions` in PostgreSQL (and ML-down fallback evidence).
+3. **Real-Time Chat:** Send message from Incognito (`priya@workspace.local`) → instant update on Admin screen + F5 persistence + `messages` table query.
+4. **AI Assistant:** Summarize notes (`Local Extractive Engine`) and extract structured action items.
+5. **Analytics:** Live SQL aggregations (read actual task & completion metrics from screen).
+6. **Mobile PWA:** Show installed PWA running standalone on Android phone + recording backup.
 
 ### Slide 9: Project Limitations & Future Work
-- **Limitations:** Synthetic ML data; collaborative rich-text editor (Yjs) deferred; AI operates on prompt text without automated document vector search (RAG).
-- **Future Scope:** Real-world enterprise dataset collection; automated RAG file search; mobile native APK build.
+- **Limitations:** Synthetic ML data; collaborative rich-text editor (Yjs) deferred; rule-based AI without vector RAG over files; PWA rather than native APK; no multi-language localization; no concurrency load testing.
+- **Future Scope:** Real-world team telemetry; CRDT collaborative editor reusing `documents` & `tenantAccess.js`; automated RAG file search; multi-language localization; concurrency load testing.
 
-### Slide 10: Conclusion & Q&A
-- Delivered a verified, multi-tenant collaborative platform combining real-time communication, predictive analytics, and automated auditing.
+### Slide 10: Conclusion & Defense
+- Delivered a verified, multi-tenant collaborative platform across **36 automated checks (7 suites)** combining real-time communication, predictive analytics, and transactional auditing.
 
 ---
 
@@ -79,12 +79,12 @@
 
 > *"Good morning respected evaluators and guide. My project is an **AI-Powered Real-Time Collaborative Workspace with Predictive Analytics**, developed for Kishkindha University.
 >
-> Traditional project trackers like Jira or Trello are retrospective—they notify managers only after a deadline has been breached. The core innovation of this platform is proactive risk mitigation: as developers update task progress on our Kanban board, the system passes mid-sprint velocity snapshots to a FastAPI machine learning service that calculates the probability of task delay.
+> Traditional project trackers like Jira or Trello are retrospective—they notify managers only after a deadline has been breached. The core innovation of this platform is proactive risk mitigation: as developers move cards on our Kanban board, `taskController.js` logs the audit transition inside a PostgreSQL transaction and passes velocity features (with a 5-second timeout and graceful failure fallback) to a FastAPI machine learning service that stores the delay prediction in `task_predictions`.
 >
-> We evaluated both Logistic Regression and Random Forest using 5-Fold Stratified Cross-Validation on a 3,000-record dataset. On this synthetic dataset, the baseline Logistic Regression slightly outperformed Random Forest with 90.17% vs 89.03% CV accuracy. I retained Random Forest because it is architecturally prepared for non-linear interactions in real software team data and provides feature importance rankings, but I report honestly that it did not beat the baseline on this linear synthetic dataset.
+> We evaluated both Logistic Regression and Random Forest using 5-Fold Stratified Cross-Validation on a 3,000-record dataset. On this synthetic dataset, Logistic Regression scored 90.17% vs Random Forest 89.03% CV accuracy. I retained Random Forest because it provides feature importance rankings and can capture non-linear interactions in real data, and I report honestly that it did not beat the baseline on this synthetic dataset.
 >
-> On the engineering side, the backend is built with Node.js and PostgreSQL 18 with 16 normalized tables. Foreign keys maintain database consistency, but true tenant isolation is enforced because every database query filters by `org_id` and our `requireRole` middleware verifies active membership before execution. We proved this through 10 automated multi-tenancy tests that confirmed HTTP 403 Forbidden on cross-tenant requests.
+> On the engineering side, the backend runs Node.js and PostgreSQL 18 with **18 normalized tables** and zero database triggers. The JWT carries only `userId`; organization and analytics routes verify `organization_members` in `requireRole` (HTTP 403), while task, chat, file, and Socket.IO handlers use our shared `tenantAccess.js` helper to resolve organization ownership through the workspace and return HTTP 404 across tenants. Writing `test_tenant_tasks.js` caught a real 0-of-5 cross-tenant leak on those sub-routes earlier, which I fixed and verified at 5 of 5.
 >
-> For real-time chat, we solved the message consistency problem using a persist-then-broadcast pattern: messages are saved in PostgreSQL before emitting via Socket.IO. We also built an AI assistant for meeting summarization, a visual Recharts analytics dashboard, and an installable Progressive Web App (PWA) service worker for mobile access.
+> For real-time chat, messages persist to PostgreSQL before broadcasting via Socket.IO. We also provide rule-based extractive summarization and heuristic action-item extraction (with optional Gemini support if an API key is configured), live SQL analytics, and an installable Android PWA app shell where `/api/` calls always fetch fresh server data.
 >
-> I have verified the system through 31 automated tests, and I invite you to view the live demonstration."*
+> I verified the system across **36 automated checks in 7 suites** plus live browser checks, and I invite you to view the demonstration."*

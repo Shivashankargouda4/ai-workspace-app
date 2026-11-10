@@ -98,7 +98,7 @@
         <span class="badge badge-blue">MCA Major Project (2026)</span>
         <h1 style="font-size: 2.8rem; margin: 24px 0 16px 0;">AI-Powered Real-Time Collaborative Workspace with Predictive Analytics</h1>
         <p style="font-size: 1.3rem; color: #94a3b8; max-width: 800px; margin: 0 auto 36px auto;">
-          A full-stack collaborative platform integrating WebSocket communication with machine learning task delay risk forecasting and generative meeting assistance.
+          A full-stack collaborative platform integrating WebSocket communication with machine learning task delay forecasting and rule-based meeting assistance (with optional Gemini support).
         </p>
         <div style="background: #0f172a; display: inline-block; padding: 20px 40px; border-radius: 12px; border: 1px solid #334155; text-align: left;">
           <p style="margin-bottom: 6px;"><strong>Candidate:</strong> Shivashankargoud B R</p>
@@ -141,8 +141,8 @@
       <ul>
         <li><strong>Multi-Tenancy & RBAC:</strong> Partition organizations, workspaces, and projects with roles (Admin, Manager, Member) and single-use cryptographic invitations.</li>
         <li><strong>Interactive Kanban Auditing:</strong> Drag-and-drop task lifecycle management with state transitions logged to <code>task_status_history</code>.</li>
-        <li><strong>Machine Learning Microservice:</strong> FastAPI service returning delay probabilities ($p \ge 0.70 \rightarrow \text{High Risk}$) and continuous scores.</li>
-        <li><strong>Generative AI Assistant:</strong> Meeting notes summarization and structured action item extraction via Gemini API.</li>
+        <li><strong>Machine Learning Microservice:</strong> FastAPI service returning delay probabilities (p ≥ 0.70 → High Risk) with a 5-second timeout fallback.</li>
+        <li><strong>AI Assistant:</strong> Rule-based extractive summarization and heuristic action-item extraction, with optional Gemini API support.</li>
         <li><strong>Installable Android PWA:</strong> Progressive Web App with app-shell caching, standalone display mode, and touch-friendly controls.</li>
       </ul>
       <div class="speaker-notes">
@@ -164,9 +164,9 @@
           </ul>
           <h3>Application Server Layer</h3>
           <ul>
-            <li>Express.js REST API (Node.js LTS)</li>
-            <li>Socket.IO bidirectional room multicast</li>
-            <li>JWT Access Tokens (15 min) + httpOnly Cookies</li>
+            <li>Express.js REST API (Node.js LTS, <code>express-rate-limit</code>)</li>
+            <li>Socket.IO bidirectional room multicast (membership-checked)</li>
+            <li>JWT Access Tokens (15 min, <code>userId</code> only) + httpOnly Cookies</li>
           </ul>
         </div>
         <div>
@@ -174,13 +174,13 @@
           <ul>
             <li>Python 3.12 + FastAPI (Port 8000)</li>
             <li>scikit-learn Pipeline (OneHotEncoder + StandardScaler)</li>
-            <li>Joblib serialized model artifacts</li>
+            <li>Joblib serialized model artifacts (5s caller timeout)</li>
           </ul>
           <h3>Database & Storage Layer</h3>
           <ul>
-            <li>PostgreSQL 18 (16 normalized tables)</li>
-            <li>Audit history: <code>task_status_history</code></li>
-            <li>Single-origin static bundle serving</li>
+            <li>PostgreSQL 18 (<strong>18 normalized tables</strong>, 0 DB triggers)</li>
+            <li>Audit history: <code>task_status_history</code> (in transaction)</li>
+            <li>Single-origin static bundle serving + <code>multer@2.5.0</code></li>
           </ul>
         </div>
       </div>
@@ -261,13 +261,13 @@
     <div class="slide">
       <h2>6. Database Design & Multi-Tenant Isolation</h2>
       <ul>
-        <li><strong>16 Relational Tables:</strong> Enforce strict foreign key referential integrity in PostgreSQL 18.</li>
-        <li><strong>Audit Trail:</strong> Every Kanban status transition appends an immutable row to <code>task_status_history</code> capturing old status, new status, progress, actor, and UTC timestamp.</li>
-        <li><strong>Real Isolation Protection:</strong> Foreign keys keep data consistent, but true isolation is enforced by every query filtering by <code>org_id</code> and the <code>requireRole</code> middleware checking active membership before execution.</li>
-        <li><strong>10 Multi-Tenancy Tests:</strong> Proved that cross-tenant requests consistently return <code>HTTP 403 Forbidden</code>.</li>
+        <li><strong>18 Relational Tables:</strong> Enforce foreign key referential integrity in PostgreSQL 18 (<code>001_initial_schema.sql</code> + <code>003_invitations_and_departments.sql</code>).</li>
+        <li><strong>Transactional Audit Trail:</strong> Every Kanban status transition appends a row to <code>task_status_history</code> inside the <code>taskController.js</code> transaction (no database triggers).</li>
+        <li><strong>Two-Layer Tenant Isolation:</strong> <code>requireRole</code> enforces RBAC on org/analytics routes (HTTP 403), while <code>tenantAccess.js</code> resolves orgs through workspaces for tasks, channels, messages, files, and Socket.IO (HTTP 404 across tenants).</li>
+        <li><strong>15 Multi-Tenant Tests:</strong> <code>test_multitenancy.js</code> (10 checks) + <code>test_tenant_tasks.js</code> (5 checks, closed from 0/5 to 5/5).</li>
       </ul>
       <div class="speaker-notes">
-        <strong>Viva Defense Q3:</strong> "Foreign keys keep data consistent, but they do NOT isolate tenants. True isolation is enforced by application-level query filtering on org_id and requireRole checking organization_members."
+        <strong>Viva Defense Q3:</strong> "Foreign keys do NOT isolate tenants. The JWT carries only userId; org/analytics routes verify organization_members via requireRole (403), and task/chat/file/socket handlers resolve org ownership through the workspace via tenantAccess.js (404)."
       </div>
     </div>
 
@@ -278,16 +278,16 @@
         <div>
           <h3>Socket.IO Chat Engine</h3>
           <ul>
-            <li><strong>Persist-Then-Broadcast:</strong> Messages are committed to PostgreSQL <code>messages</code> before emitting to room peers.</li>
-            <li><strong>Reconnection Resilience:</strong> On drop/reconnect, clients fetch message history from database via REST API.</li>
+            <li><strong>Persist-Then-Broadcast:</strong> Re-verifies channel org membership on <code>channel:join</code> and <code>message:send</code>, saves to PostgreSQL, then emits.</li>
+            <li><strong>Reconnection Resilience:</strong> On reload (F5) or reconnect, clients fetch authorized history via REST API.</li>
           </ul>
         </div>
         <div>
-          <h3>Generative AI Assistant</h3>
+          <h3>Rule-Based AI Assistant (+ Optional Gemini)</h3>
           <ul>
-            <li><strong>Summarizer:</strong> Transforms meeting discussions into 3-point executive summaries via Gemini API.</li>
-            <li><strong>Action Extractor:</strong> Parses text into structured JSON tasks with assignees and estimated days.</li>
-            <li><strong>Deterministic Fallback:</strong> Local NLP engine ensures offline reliability.</li>
+            <li><strong>Summarizer:</strong> Local Extractive Engine selects key sentences without cutting decimal percentages (e.g., <code>89.3%</code>).</li>
+            <li><strong>Action Extractor:</strong> Heuristic Engine parses notes into structured task JSON items.</li>
+            <li><strong>Optional Gemini Support:</strong> Switches to Google Gemini through the API when server-side <code>GEMINI_API_KEY</code> is set.</li>
           </ul>
         </div>
       </div>
@@ -297,8 +297,8 @@
     <div class="slide">
       <h2>8. Installable Android Progressive Web App</h2>
       <ul>
-        <li><strong>App Shell Caching:</strong> Service Worker (<code>sw.js</code>) caches HTML, CSS, JS, and icons for offline resilience.</li>
-        <li><strong>Zero API Caching:</strong> All <code>/api/</code> calls bypass the cache to prevent data leakage between tenants.</li>
+        <li><strong>App Shell Caching:</strong> Service Worker (<code>sw.js</code>) caches HTML, CSS, JS, and icons so the app launches quickly.</li>
+        <li><strong>Zero API Caching:</strong> All <code>/api/</code> and WebSocket calls bypass cache so data always comes live from the server.</li>
         <li><strong>Installed on Physical Android:</strong> Verified via Cloudflare Tunnel over HTTPS on a real Android phone in standalone display mode.</li>
         <li><strong>Touch-Friendly Controls:</strong> Each Kanban card features a 1-tap column selector alongside desktop drag-and-drop.</li>
         <li><strong>Zero Horizontal Overflow:</strong> Navigation automatically moves to an Android bottom bar at 390px mobile viewport.</li>
@@ -309,10 +309,10 @@
     <div class="slide">
       <h2>9. Conclusion & Verification Summary</h2>
       <ul>
-        <li><strong>31 Automated Tests Passed (100%):</strong> Auth (6), Multi-tenancy (10), AI (4), Analytics (5), Files (4), ML (2).</li>
-        <li><strong>Real Terminal Evidence:</strong> All unit and integration test outputs verified in terminal with exit code 0.</li>
+        <li><strong>36 Automated Checks Passed (7 Suites):</strong> Auth (6), Org RBAC (10), Analytics (5), AI (4), Files (4), Cross-Tenant Tasks/Chat/Files/Socket (5), ML (2).</li>
+        <li><strong>Graceful Degradation & Rate Limiting:</strong> Chrome ML-down drag saved Row 36 without error; auth brute-force guard skips valid logins.</li>
         <li><strong>Verified On Physical Hardware:</strong> Tested on Google Chrome and installed as a PWA on an Android phone over HTTPS.</li>
-        <li><strong>Future Work:</strong> Pilot testing with commercial engineering teams, automated RAG semantic file search, and native Android APK compilation.</li>
+        <li><strong>Limitations &amp; Future Work:</strong> Synthetic ML data, deferred CRDT editor (<code>documents</code>), no load testing, PWA (not native APK), no localization, and RAG file search.</li>
       </ul>
       <div style="text-align: center; margin-top: 36px;">
         <h3 style="color: #38bdf8; font-size: 1.5rem;">Thank You! Questions & Live Demonstration</h3>

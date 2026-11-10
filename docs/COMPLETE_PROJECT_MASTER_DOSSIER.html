@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI-Powered Collaborative Workspace - Master Project Dossier & Technical Reference</title>
+<style>
+  @page {
+    size: A4;
+    margin: 16mm 14mm 16mm 14mm;
+    @bottom-right {
+      content: counter(page);
+    }
+  }
+  
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #1e293b;
+    line-height: 1.5;
+    font-size: 9.5pt;
+    margin: 0;
+    padding: 0;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    color: #0f172a;
+    font-weight: 700;
+    page-break-after: avoid;
+    margin-top: 1.3em;
+    margin-bottom: 0.4em;
+  }
+
+  h1 { font-size: 17pt; border-bottom: 2px solid #0284c7; padding-bottom: 5px; margin-top: 1.5em; }
+  h2 { font-size: 12.5pt; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px; color: #0369a1; }
+  h3 { font-size: 10.5pt; color: #334155; }
+  h4 { font-size: 9.5pt; color: #475569; }
+
+  p { margin: 0.4em 0; }
+  
+  .cover {
+    height: 94vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    page-break-after: always;
+    padding: 25px 15px;
+    box-sizing: border-box;
+    text-align: center;
+  }
+  
+  .cover-header { margin-top: 25px; }
+  .cover-title { font-size: 20pt; font-weight: 800; color: #0369a1; margin-bottom: 12px; line-height: 1.25; }
+  .cover-subtitle { font-size: 11pt; color: #475569; max-width: 650px; margin: 0 auto; font-weight: 500; }
+  
+  .badge {
+    display: inline-block;
+    background: #e0f2fe;
+    color: #0369a1;
+    font-weight: 700;
+    font-size: 8pt;
+    padding: 4px 12px;
+    border-radius: 9999px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 15px;
+    border: 1px solid #bae6fd;
+  }
+
+  .cover-meta {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 18px;
+    text-align: left;
+    max-width: 580px;
+    margin: 25px auto;
+  }
+
+  .meta-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dashed #e2e8f0; }
+  .meta-row:last-child { border-bottom: none; }
+  .meta-label { font-weight: 600; color: #64748b; font-size: 8.5pt; }
+  .meta-val { font-weight: 700; color: #0f172a; font-size: 8.5pt; }
+
+  .cover-footer {
+    font-size: 8pt;
+    color: #94a3b8;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 12px;
+  }
+
+  .page-break { page-break-after: always; }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0;
+    font-size: 8pt;
+    page-break-inside: avoid;
+  }
+
+  th, td {
+    border: 1px solid #cbd5e1;
+    padding: 4px 7px;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  th {
+    background: #f1f5f9;
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  tr:nth-child(even) { background: #f8fafc; }
+
+  pre, code {
+    font-family: "Consolas", "Courier New", monospace;
+  }
+
+  pre {
+    background: #0f172a;
+    color: #f8fafc;
+    padding: 8px 10px;
+    border-radius: 5px;
+    font-size: 7.5pt;
+    overflow-x: auto;
+    line-height: 1.35;
+    margin: 6px 0 8px 0;
+    page-break-inside: avoid;
+  }
+
+  p code, li code, td code {
+    background: #f1f5f9;
+    color: #0284c7;
+    padding: 1px 3px;
+    border-radius: 3px;
+    font-size: 7.8pt;
+    font-weight: 600;
+  }
+
+  .callout {
+    padding: 7px 10px;
+    border-radius: 5px;
+    margin: 8px 0;
+    font-size: 8.5pt;
+    border-left: 4px solid;
+    page-break-inside: avoid;
+  }
+
+  .callout-info { background: #f0f9ff; border-left-color: #0284c7; color: #0369a1; }
+  .callout-success { background: #f0fdf4; border-left-color: #16a34a; color: #15803d; }
+  .callout-warning { background: #fffbeb; border-left-color: #f59e0b; color: #b45309; }
+  .callout-danger { background: #fef2f2; border-left-color: #dc2626; color: #b91c1c; }
+
+  .toc {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px 18px;
+    margin: 12px 0;
+  }
+
+  .toc-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+    border-bottom: 1px dotted #cbd5e1;
+    font-size: 8.5pt;
+  }
+  .toc-title { font-weight: 600; color: #1e293b; }
+  .toc-pg { color: #64748b; font-weight: 700; }
+
+  .step-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 5px;
+    padding: 8px 10px;
+    margin: 8px 0;
+    background: #ffffff;
+    page-break-inside: avoid;
+  }
+  
+  .step-header {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 700;
+    color: #0369a1;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 3px;
+    margin-bottom: 5px;
+    font-size: 9pt;
+  }
+
+  .tag {
+    font-size: 6.8pt;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .tag-user { background: #fef3c7; color: #92400e; }
+  .tag-agent { background: #dbeafe; color: #1e40af; }
+  .tag-system { background: #dcfce7; color: #166534; }
+</style>
+</head>
+<body>
+
+<!-- COVER PAGE -->
+<div class="cover">
+  <div class="cover-header">
+    <div class="badge">Master Project Dossier &amp; Ground-Truth Reference</div>
+    <div class="cover-title">AI-POWERED REAL-TIME COLLABORATIVE WORKSPACE WITH PREDICTIVE ANALYTICS</div>
+    <div class="cover-subtitle">Technical Blueprint, Exact Codebase Inventory, Verified Machine Learning Results, Audit &amp; Isolation Case Studies, and Viva Voce Defense Playbook</div>
+  </div>
+
+  <div class="cover-meta">
+    <div class="meta-row"><span class="meta-label">Candidate Name:</span><span class="meta-val">Shivashankargoud B R</span></div>
+    <div class="meta-row"><span class="meta-label">University Reg. No:</span><span class="meta-val">KUB25MCA019</span></div>
+    <div class="meta-row"><span class="meta-label">Degree &amp; Program:</span><span class="meta-val">Master of Computer Applications (MCA)</span></div>
+    <div class="meta-row"><span class="meta-label">Department:</span><span class="meta-val">Department of Computer Applications</span></div>
+    <div class="meta-row"><span class="meta-label">Institution:</span><span class="meta-val">Kishkindha University</span></div>
+    <div class="meta-row"><span class="meta-label">Active Workspace:</span><span class="meta-val">C:\dev\workspace-app</span></div>
+    <div class="meta-row"><span class="meta-label">Database Engine:</span><span class="meta-val">PostgreSQL 18 (workspace_app - 18 Tables, 0 DB Triggers)</span></div>
+    <div class="meta-row"><span class="meta-label">Core Tech Stack:</span><span class="meta-val">Express (Node.js) + FastAPI (Python) + React PWA</span></div>
+    <div class="meta-row"><span class="meta-label">Automated Checks:</span><span class="meta-val">36 Verified Test Checks Across 7 Suites (Zero Failures)</span></div>
+    <div class="meta-row"><span class="meta-label">Document Date:</span><span class="meta-val">November 2026</span></div>
+  </div>
+
+  <div class="cover-footer">
+    This document serves as an exact personal build log and viva defense reference. All figures, table names, file paths, and benchmark results match the live project codebase without discrepancy.
+  </div>
+</div>
+
+<!-- TABLE OF CONTENTS -->
+<div class="page-break"></div>
+<h1>Table of Contents</h1>
+<div class="toc">
+  <div class="toc-item"><span class="toc-title">1. System Concept, Scope &amp; Academic Disclosures</span><span class="toc-pg">Section 1</span></div>
+  <div class="toc-item"><span class="toc-title">2. Ground-Truth File Inventory &amp; Directory Structure</span><span class="toc-pg">Section 2</span></div>
+  <div class="toc-item"><span class="toc-title">3. PostgreSQL 18 Database Architecture (The Real 18 Tables)</span><span class="toc-pg">Section 3</span></div>
+  <div class="toc-item"><span class="toc-title">4. Multi-Tenant Isolation &amp; Role Hierarchy Implementation</span><span class="toc-pg">Section 4</span></div>
+  <div class="toc-item"><span class="toc-title">5. Machine Learning Microservice Evaluation (Exact 3,000-Sample Data)</span><span class="toc-pg">Section 5</span></div>
+  <div class="toc-item"><span class="toc-title">6. Rule-Based AI Assistant (+ Optional Gemini) &amp; File Upload Subsystems</span><span class="toc-pg">Section 6</span></div>
+  <div class="toc-item"><span class="toc-title">7. Progressive Web App (PWA) Implementation &amp; Mobile Controls</span><span class="toc-pg">Section 7</span></div>
+  <div class="toc-item"><span class="toc-title">8. Chronological Execution History (User Actions &amp; Agent Fixes)</span><span class="toc-pg">Section 8</span></div>
+  <div class="toc-item"><span class="toc-title">9. Case Study: Kanban Audit Trail &amp; ML Graceful Degradation</span><span class="toc-pg">Section 9</span></div>
+  <div class="toc-item"><span class="toc-title">10. 36-Check Verification Suite Across 7 Scripts &amp; Test Evidence</span><span class="toc-pg">Section 10</span></div>
+  <div class="toc-item"><span class="toc-title">11. Master Command-Line Encyclopedia</span><span class="toc-pg">Section 11</span></div>
+  <div class="toc-item"><span class="toc-title">12. Technical Troubleshooting &amp; Root Cause Analysis</span><span class="toc-pg">Section 12</span></div>
+  <div class="toc-item"><span class="toc-title">13. Viva Voce Oral Defense Playbook &amp; Model Answers</span><span class="toc-pg">Section 13</span></div>
+</div>
+
+<!-- SECTION 1 -->
+<h1>1. System Concept, Scope &amp; Academic Disclosures</h1>
+<p>
+The <strong>AI-Powered Real-Time Collaborative Workspace with Predictive Analytics</strong> is a multi-tenant full-stack productivity web application designed to unify Agile task tracking, real-time messaging, rule-based AI text assistance (with optional Gemini API support), secure file handling, and proactive machine learning risk prediction. Developed by <strong>Shivashankargoud B R</strong> (Reg No: <strong>KUB25MCA019</strong>) at <strong>Kishkindha University</strong>, the project demonstrates decoupled microservices interacting through REST and WebSocket interfaces.
+</p>
+
+<h3>Academic Disclosures &amp; Project Scope Clarification</h3>
+<div class="callout callout-warning">
+  <strong>1. Synthetic Data Disclosure:</strong> The machine learning dataset consists of 3,000 synthetically generated task records. Model performance scores reflect learning capability on rule-based probabilistic data rather than measured production team dynamics.<br>
+  <strong>2. AI Assistance Disclosure:</strong> AI-assisted development tools were utilized during development for code structuring, debugging, and documentation generation. In the running demo (<code>GEMINI_API_KEY</code> unset), the assistant executes rule-based extractive summarization and heuristic action-item extraction.<br>
+  <strong>3. Project Scope Clarification (Real vs Planned):</strong> To ensure thorough delivery and testing of multi-tenancy, machine learning, and real-time chat within the solo timeframe, <em>collaborative rich-text editing via CRDT / Yjs</em>, <em>multi-language localization</em>, <em>RAG search over uploaded files</em>, and <em>concurrency load testing</em> were deferred to future work, and mobile access is delivered as a PWA rather than a compiled native APK. The <code>documents</code> table remains reserved in PostgreSQL.
+</div>
+
+<!-- SECTION 2 -->
+<h1>2. Ground-Truth File Inventory &amp; Directory Structure</h1>
+<p>Below is the exact file inventory of the active codebase at <code>C:\dev\workspace-app</code>:</p>
+
+<pre>
+C:\dev\workspace-app\
+|-- .git\                             # Git repository tagged demo-safe-v1 on master
+|-- client\                           # Frontend React 18 + Vite PWA
+|   |-- public\
+|   |   |-- icon-192.png              # 192x192 PWA launcher icon
+|   |   |-- icon-512.png              # 512x512 PWA splash icon
+|   |   |-- manifest.json             # PWA Web App Manifest (standalone, theme #0284c7)
+|   |   `-- sw.js                     # Service Worker (Caches app shell; skips /api/)
+|   |-- src\
+|   |   |-- api\client.js             # Axios instance with silent /api/auth/refresh interceptor
+|   |   |-- components\               # Sidebar.jsx, Navbar.jsx
+|   |   |-- pages\                    # Dashboard.jsx, Kanban.jsx, Chat.jsx, Analytics.jsx, Login.jsx
+|   |   |-- context\                  # AuthContext.jsx
+|   |   |-- App.jsx                   # Route guards &amp; unauthenticated redirect to /login
+|   |   `-- main.jsx                  # React DOM entry point &amp; Service Worker registration
+|   `-- dist\                         # Compiled production build served statically by Express
+|-- server\                           # Backend Node.js / Express API Server
+|   |-- migrations\
+|   |   |-- 001_initial_schema.sql    # 16 core relational tables &amp; indexes
+|   |   |-- 002_seed_data.sql         # Initial seed data
+|   |   `-- 003_invitations_and_departments.sql # +2 tables (departments, invitations) = 18 total
+|   |-- src\
+|   |   |-- config\db.js              # pg.Pool PostgreSQL connection pool
+|   |   |-- utils\tenantAccess.js     # Shared workspace-resolved organization membership helper
+|   |   |-- controllers\
+|   |   |   |-- aiController.js       # Rule-based NLP / heuristic assistant + optional Gemini API
+|   |   |   |-- analyticsController.js# SQL metrics &amp; risk aggregations scoped by orgId
+|   |   |   |-- authController.js     # Registration, bcrypt-12 verification, JWT issuance
+|   |   |   |-- chatController.js     # Workspace channel &amp; message history (membership-checked)
+|   |   |   |-- fileController.js     # Multer v2.5.0 secure file upload &amp; workspace-scoped download
+|   |   |   |-- orgController.js      # Tenant organization management &amp; single-use invitations
+|   |   |   `-- taskController.js     # Task CRUD, audit history insert, 5s-timeout ML dispatch
+|   |   |-- middleware\auth.js        # requireAuth (userId JWT) &amp; requireRole (organization_members)
+|   |   |-- routes\                   # ai.js, analytics.js, auth.js (rate-limiter), chat.js, files.js, orgs.js, tasks.js
+|   |   |-- sockets\chatSocket.js     # Socket.IO handlers checking membership on join &amp; message:send
+|   |   `-- server.js                 # Express app, Socket.IO setup, single-origin static dist serving
+|   |-- cleanup_test_data.js          # Safe dry-run/--apply cleanup script for test users &amp; files
+|   |-- update_passwords.js           # Safe bcrypt-12 password update script (accepts DEMO_PASSWORD/arg)
+|   |-- test_ai.js                    # AI Assistant verification suite (4 checks)
+|   |-- test_analytics.js             # SQL metrics &amp; org-guard suite (5 checks)
+|   |-- test_auth.js                  # JWT &amp; bcrypt auth suite (6 checks)
+|   |-- test_drag_audit.js            # Status transition &amp; audit trail script
+|   |-- test_files.js                 # File upload, listing &amp; download suite (4 checks)
+|   |-- test_multitenancy.js          # Org RBAC &amp; single-use invitation suite (10 checks)
+|   `-- test_tenant_tasks.js          # Cross-tenant tasks, chat, files &amp; Socket.IO suite (5 checks)
+|-- ml-service\                       # Python FastAPI Predictive Analytics Microservice
+|   |-- app\main.py                   # FastAPI app (/predict and /health endpoints)
+|   |-- data\synthetic_tasks.csv      # Exact 3,000-sample dataset (2,015 delayed, 985 on-time)
+|   |-- models\delay_predictor.joblib # Serialized trained Random Forest pipeline
+|   |-- generate_dataset.py           # Reproducible 3,000-record dataset generator
+|   |-- test_predict.py               # Microservice unit test (2 checks)
+|   `-- train.py                      # 5-fold CV evaluation &amp; model training pipeline
+`-- docs\                             # Defense documentation (synced to 18 tables &amp; 36 checks)
+    |-- final_project_report.md, ml_results.md, presentation_slides.html, srs.md
+    `-- system_architecture_and_uml.md, test_report.md, viva_presentation_and_defense.md
+</pre>
+
+<!-- SECTION 3 -->
+<h1>3. PostgreSQL 18 Database Architecture (The Real 18 Tables)</h1>
+<p>
+Running <code>\dt</code> against database <code>workspace_app</code> confirms <strong>18 normalized tables</strong> (16 from <code>001_initial_schema.sql</code> plus <code>departments</code> and <code>invitations</code> from <code>003_invitations_and_departments.sql</code>), with <strong>zero database triggers</strong> (<code>SELECT tgname FROM pg_trigger WHERE NOT tgisinternal;</code> returns 0 rows).
+</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Real Table Name</th>
+      <th>Primary Key</th>
+      <th>Tenant Foreign Key</th>
+      <th>Actual Schema Columns &amp; Constraints</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>1</td><td><code>users</code></td><td><code>id SERIAL</code></td><td>-</td><td><code>name, email UNIQUE, password_hash, avatar_url, created_at, updated_at</code></td></tr>
+    <tr><td>2</td><td><code>organizations</code></td><td><code>id SERIAL</code></td><td>-</td><td><code>name, slug UNIQUE, created_by REFERENCES users(id), created_at</code></td></tr>
+    <tr><td>3</td><td><code>organization_members</code></td><td><code>id SERIAL</code></td><td><code>org_id REFERENCES organizations</code></td><td><code>user_id, role ('admin','manager','member'), joined_at, UNIQUE(org_id, user_id)</code></td></tr>
+    <tr><td>4</td><td><code>workspaces</code></td><td><code>id SERIAL</code></td><td><code>org_id REFERENCES organizations</code></td><td><code>name, description, created_at</code></td></tr>
+    <tr><td>5</td><td><code>workspace_members</code></td><td><code>id SERIAL</code></td><td>-</td><td><code>workspace_id, user_id, role ('admin','manager','member'), joined_at, UNIQUE(ws, user)</code></td></tr>
+    <tr><td>6</td><td><code>projects</code></td><td><code>id SERIAL</code></td><td><code>org_id REFERENCES organizations</code></td><td><code>workspace_id, name, description, status ('active','archived','completed'), created_by</code></td></tr>
+    <tr><td>7</td><td><code>tasks</code></td><td><code>id SERIAL</code></td><td><code>org_id REFERENCES organizations</code></td><td><code>project_id, title, priority ('low','medium','high'), status ('todo','in_progress','review','done'), complexity (1-10), progress (0-100), due_date</code></td></tr>
+    <tr><td>8</td><td><code>task_assignees</code></td><td><code>id SERIAL</code></td><td>-</td><td><code>task_id REFERENCES tasks, user_id REFERENCES users, assigned_at, UNIQUE(task, user)</code></td></tr>
+    <tr><td>9</td><td><code>task_comments</code></td><td><code>id SERIAL</code></td><td>-</td><td><code>task_id REFERENCES tasks, user_id REFERENCES users, content, created_at</code></td></tr>
+    <tr><td>10</td><td><code>task_status_history</code></td><td><code>id SERIAL</code></td><td>-</td><td><strong>Append-only audit trail:</strong> <code>task_id, old_status, new_status, old_progress, new_progress, changed_by, changed_at</code></td></tr>
+    <tr><td>11</td><td><code>channels</code></td><td><code>id SERIAL</code></td><td><code>org_id REFERENCES organizations</code></td><td><code>workspace_id, name, type ('public','direct'), created_at</code></td></tr>
+    <tr><td>12</td><td><code>messages</code></td><td><code>id SERIAL</code></td><td>-</td><td><code>channel_id REFERENCES channels, user_id REFERENCES users, content, created_at</code></td></tr>
+    <tr><td>13</td><td><code>notifications</code></td><td><code>id SERIAL</code></td><td><code>org_id REFERENCES organizations</code></td><td><code>user_id, type, title, message, is_read BOOLEAN DEFAULT FALSE, created_at</code></td></tr>
+    <tr><td>14</td><td><code>documents</code></td><td><code>id SERIAL</code></td><td><code>org_id REFERENCES organizations</code></td><td><code>workspace_id, title, content, yjs_state BYTEA, created_by, updated_at</code> (reserved)</td></tr>
+    <tr><td>15</td><td><code>files</code></td><td><code>id SERIAL</code></td><td><code>org_id REFERENCES organizations</code></td><td><code>workspace_id, name, path, mime_type, size, uploaded_by, created_at</code></td></tr>
+    <tr><td>16</td><td><code>task_predictions</code></td><td><code>id SERIAL</code></td><td>-</td><td><strong>ML Output Store:</strong> <code>task_id, delay_probability FLOAT, risk_level ('low','medium','high'), model_version, predicted_at</code></td></tr>
+    <tr><td>17</td><td><code>departments</code></td><td><code>id SERIAL</code></td><td><code>org_id REFERENCES organizations</code></td><td><code>name, created_at</code> (from <code>003_invitations_and_departments.sql</code>)</td></tr>
+    <tr><td>18</td><td><code>invitations</code></td><td><code>id SERIAL</code></td><td><code>org_id REFERENCES organizations</code></td><td><code>email, role, token UNIQUE, expires_at, accepted_at, created_by</code> (from <code>003_invitations_and_departments.sql</code>)</td></tr>
+  </tbody>
+</table>
+
+<!-- SECTION 4 -->
+<h1>4. Multi-Tenant Isolation &amp; Role Hierarchy Implementation</h1>
+<p>
+Multi-tenant isolation is enforced in PostgreSQL-backed Express middleware and our shared workspace-resolution helper, rather than relying on JWT claims or database triggers.
+</p>
+
+<h3>Exact Authentication, Rate Limiting &amp; Isolation Flow</h3>
+<ol>
+  <li><strong>Authentication (<code>requireAuth</code> in <code>server/src/middleware/auth.js</code>):</strong>
+    <ul>
+      <li>Extracts <code>Authorization: Bearer &lt;token&gt;</code> header and verifies signature via <code>JWT_ACCESS_SECRET</code>.</li>
+      <li>JWT holds only <code>decoded.userId</code> (never <code>org_id</code>). Looks up <code>SELECT id, name, email, avatar_url FROM users WHERE id = $1</code> and sets <code>req.user</code>.</li>
+      <li><code>server/src/routes/auth.js</code> applies <code>express-rate-limit</code> to <code>/login</code> and <code>/register</code> with <code>skipSuccessfulRequests: true</code> (<code>max: 20</code> in production / <code>60</code> in development per 15 min) so repeated failed attempts block with HTTP 429 without locking out valid logins.</li>
+    </ul>
+  </li>
+  <li><strong>Organization &amp; Analytics Authorization (<code>requireRole(minimumRole)</code>):</strong>
+    <ul>
+      <li>Reads target <code>orgId</code> from params, body, query, or <code>x-org-id</code> header, then checks PostgreSQL:
+        <pre>SELECT role FROM organization_members WHERE org_id = $1 AND user_id = $2</pre>
+      </li>
+      <li>The client-supplied org ID is never trusted until membership confirms; non-members get <strong>HTTP 403 Forbidden</strong>. Evaluates role hierarchy (<code>member: 1</code>, <code>manager: 2</code>, <code>admin: 3</code>) and attaches <code>req.userOrgRole</code> and <code>req.orgId</code>.</li>
+    </ul>
+  </li>
+  <li><strong>Task, Chat, File &amp; Socket Isolation (<code>resolveAuthorizedResource</code> in <code>server/src/utils/tenantAccess.js</code>):</strong>
+    <ul>
+      <li>Applied across every route in <code>taskController.js</code>, <code>chatController.js</code>, <code>fileController.js</code>, and Socket.IO <code>chatSocket.js</code> (on <code>channel:join</code>, every <code>message:send</code>, and <code>typing:*</code>).</li>
+      <li>Resolves the organization through the resource's <code>workspaces.org_id</code> join in PostgreSQL (never reading client-supplied <code>orgId</code>), verifies <code>organization_members</code>, and returns <strong>HTTP 404</strong> across tenants so existence isn't leaked.</li>
+    </ul>
+  </li>
+</ol>
+
+<!-- SECTION 5 -->
+<h1>5. Machine Learning Microservice Evaluation (Exact 3,000-Sample Data)</h1>
+<p>
+The predictive engine resides in <code>ml-service/</code>. Below are the verified metrics directly extracted from <code>docs/ml_results.md</code>, generated from <code>data/synthetic_tasks.csv</code>:
+</p>
+
+<h3>Dataset Properties</h3>
+<ul>
+  <li><strong>Total Records:</strong> Exactly <strong>3,000 samples</strong>.</li>
+  <li><strong>Class Distribution:</strong> <code>delayed = 1</code>: 2,015 samples (67.17%) | <code>on-time = 0</code>: 985 samples (32.83%).</li>
+  <li><strong>Trivial Majority-Class Baseline:</strong> <strong>67.17%</strong>.</li>
+  <li><strong>Split:</strong> 80% Train (2,400 samples), 20% Test (600 samples), stratified by class.</li>
+  <li><strong>Input Features (7):</strong> <code>priority</code> (low, medium, high), <code>complexity</code> (numeric <strong>1-10</strong>), <code>estimated_days</code>, <code>team_size</code>, <code>assignee_workload</code>, <code>previous_delays_ratio</code> (0.0-1.0), <code>midpoint_progress</code> (0-100%).</li>
+</ul>
+
+<h3>5-Fold Stratified Cross-Validation Results</h3>
+<table>
+  <thead>
+    <tr><th>Model</th><th>5-Fold Mean Accuracy</th><th>5-Fold Mean ROC-AUC</th><th>Model Behavior</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Logistic Regression (Baseline)</strong></td><td><strong>90.17% (±0.97%)</strong></td><td><strong>0.9670 (±0.0059)</strong></td><td>Slightly higher due to linear synthetic generation rules.</td></tr>
+    <tr><td><strong>Random Forest (Primary)</strong></td><td><strong>89.03% (±1.03%)</strong></td><td><strong>0.9568 (±0.0057)</strong></td><td>Kept for non-linear interaction capacity &amp; feature importance rankings.</td></tr>
+  </tbody>
+</table>
+
+<h3>Held-Out Test Set Evaluation (600 Samples)</h3>
+<table>
+  <thead>
+    <tr><th>Metric</th><th>Dummy Baseline</th><th>Logistic Regression</th><th>Random Forest</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Accuracy</strong></td><td>67.17%</td><td><strong>90.67%</strong></td><td>89.33%</td></tr>
+    <tr><td><strong>Precision</strong></td><td>67.17%</td><td><strong>92.21%</strong></td><td>90.07%</td></tr>
+    <tr><td><strong>Recall</strong></td><td>100.00%</td><td>94.04%</td><td><strong>94.54%</strong></td></tr>
+    <tr><td><strong>F1-Score</strong></td><td>80.36%</td><td><strong>93.12%</strong></td><td>92.25%</td></tr>
+    <tr><td><strong>ROC-AUC</strong></td><td>0.5000</td><td><strong>0.9662</strong></td><td>0.9564</td></tr>
+  </tbody>
+</table>
+
+<h3>Real Random Forest Feature Importance Rankings</h3>
+<table>
+  <thead>
+    <tr><th>Rank</th><th>Feature</th><th>Importance Weight</th><th>Analytical Reason</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>1</td><td><code>midpoint_progress</code></td><td><strong>38.96%</strong></td><td>Reflects synthetic weighting on schedule midpoint velocity.</td></tr>
+    <tr><td>2</td><td><code>complexity</code></td><td><strong>27.45%</strong></td><td>Complexity scale 1–10 increases schedule variance.</td></tr>
+    <tr><td>3</td><td><code>assignee_workload</code></td><td><strong>12.02%</strong></td><td>Parallel active tasks elevate risk.</td></tr>
+    <tr><td>4</td><td><code>previous_delays_ratio</code></td><td><strong>10.54%</strong></td><td>Historical delay tendency weights predicted risk.</td></tr>
+    <tr><td>5</td><td><code>estimated_days</code></td><td><strong>4.65%</strong></td><td>Longer durations correlate with slippage.</td></tr>
+    <tr><td>6</td><td><code>team_size</code></td><td><strong>2.95%</strong></td><td>Team coordination sizing factor.</td></tr>
+    <tr><td>7</td><td><code>priority_low</code></td><td><strong>2.31%</strong></td><td>One-hot encoded priority weight.</td></tr>
+    <tr><td>8</td><td><code>priority_medium</code></td><td><strong>1.12%</strong></td><td>Baseline priority weighting.</td></tr>
+  </tbody>
+</table>
+
+<!-- SECTION 6 -->
+<h1>6. Rule-Based AI Assistant (+ Optional Gemini) &amp; File Upload Subsystems</h1>
+<p>
+Two auxiliary subsystems in <code>server/src/controllers/</code>:
+</p>
+
+<h3>1. AI Assistant (<code>aiController.js</code> / <code>routes/ai.js</code>)</h3>
+<ul>
+  <li><strong>Endpoints:</strong> <code>POST /api/ai/summarize</code> and <code>POST /api/ai/action-items</code> (JWT-protected; checks <code>organization_members</code> if <code>document_id</code> is passed).</li>
+  <li><strong>Active Behavior:</strong> Because <code>GEMINI_API_KEY</code> is empty in the demo <code>.env</code>, it executes <strong>rule-based extractive summarization</strong> (<code>Local Extractive Engine</code>) and <strong>heuristic action-item extraction</strong> (<code>Heuristic Engine</code>), using boundary-aware splitting (<code>/\n+|(?&lt;=[.!?])\s+/</code>) so decimals such as <code>89.3%</code> stay intact. When a server-side <code>GEMINI_API_KEY</code> is set, it calls Google Gemini through the API.</li>
+  <li><strong>Automated Testing:</strong> Verified in <code>server/test_ai.js</code> across 4 checks.</li>
+</ul>
+
+<h3>2. Secure File Repository (<code>fileController.js</code> / <code>routes/files.js</code>)</h3>
+<ul>
+  <li><strong>Endpoints:</strong> <code>POST /api/files/upload</code> | <code>GET /api/files/workspace/:workspaceId</code> | <code>GET /api/files/:fileId/download</code>.</li>
+  <li><strong>Implementation:</strong> Uses <code>multer@2.5.0</code> disk storage with sanitized unique filenames and MIME whitelist. Enforces workspace-to-organization membership via <code>tenantAccess.js</code> across upload, listing, and download (with temp file cleanup on rejected uploads and no hardcoded <code>orgId = 1</code> fallback).</li>
+  <li><strong>Automated Testing:</strong> Verified in <code>server/test_files.js</code> (4 checks) and <code>server/test_tenant_tasks.js</code> (Check 4: cross-tenant spoofed upload/list/download rejected <code>404</code>, owner download <code>200</code>).</li>
+</ul>
+
+<!-- SECTION 7 -->
+<h1>7. Progressive Web App (PWA) Implementation &amp; Mobile Controls</h1>
+<ul>
+  <li><strong>Web App Manifest (<code>manifest.json</code>):</strong> Configured with <code>"display": "standalone"</code>, <code>"theme_color": "#0284c7"</code>, <code>"background_color": "#ffffff"</code>, linking <code>icon-192.png</code> and <code>icon-512.png</code>.</li>
+  <li><strong>Service Worker (<code>sw.js</code>):</strong> Caches only the static app shell bundle so the app launches quickly, while enforcing a network bypass for all <code>/api</code> and WebSocket calls so live data always comes from the server.</li>
+  <li><strong>Mobile-Optimized Touch Fallback:</strong> Each task card in <code>client/src/pages/Kanban.jsx</code> provides an accessible 1-tap <strong>"Move: [Status]"</strong> dropdown selector alongside desktop drag-and-drop.</li>
+  <li><strong>Physical Device Installation:</strong> Tested and installed on an Android smartphone in standalone mode over HTTPS.</li>
+</ul>
+
+<!-- SECTION 8 -->
+<h1>8. Chronological Execution History (User Actions &amp; Agent Fixes)</h1>
+<div class="step-card">
+  <div class="step-header"><span>Step 1–4: Database, ML Training &amp; PWA Serving</span><span class="tag tag-agent">Agent</span></div>
+  <p>Initialized 18 PostgreSQL tables (<code>001</code> + <code>003</code>), fixed <code>seed_demo.js</code> progress nulls and <code>train.py</code> cp1252 encoding, evaluated 3,000-sample 5-fold CV, and built static <code>client/dist</code> served on port 5000.</p>
+</div>
+<div class="step-card">
+  <div class="step-header"><span>Step 5–7: Android PWA, Workspace Migration &amp; Password Hardening</span><span class="tag tag-user">User Action</span></div>
+  <p>Installed PWA on physical Android phone via HTTPS tunnel, migrated active workspace to clean <code>C:\dev\workspace-app</code>, added <code>update_passwords.js</code> and <code>DEMO_PASSWORD</code> env handling with zero exposed credentials in Git.</p>
+</div>
+<div class="step-card">
+  <div class="step-header"><span>Step 8: ML IPv4 Timeout &amp; Cross-Tenant Isolation Hardening</span><span class="tag tag-system">Verified Fix</span></div>
+  <p>Updated <code>taskController.js</code> with a 5-second <code>AbortController</code> timeout + <code>clearTimeout</code>; wrote <code>test_tenant_tasks.js</code> (catching an initial 0/5 gap on sub-routes), built shared <code>server/src/utils/tenantAccess.js</code> resolving org membership via workspaces (passing 5/5), fixed AI decimal splitting, tuned auth rate limiting (<code>skipSuccessfulRequests: true</code>), and cleaned 25 test accounts via <code>cleanup_test_data.js --apply</code>.</p>
+</div>
+
+<!-- SECTION 9 -->
+<h1>9. Case Study: Kanban Audit Trail &amp; ML Graceful Degradation</h1>
+<p>
+Status changes write to <code>task_status_history</code> explicitly in <code>taskController.js</code> inside the same PostgreSQL transaction (<code>BEGIN</code>, <code>UPDATE tasks</code>, <code>INSERT INTO task_status_history</code>, ML dispatch, <code>COMMIT</code>) with zero database triggers.
+</p>
+<h3>Definitive Ground-Truth Evidence (Step A Verification)</h3>
+<pre>
+-- Row 36: Chrome Kanban move (Task 3: todo -> review) while Uvicorn ML service was STOPPED:
+ id | task_id | old_status | new_status |            changed_at
+----+---------+------------+------------+----------------------------------
+ 36 |       3 | todo       | review     | 2026-11-10 13:19:52.296321+05:30
+
+-- Row 37 &amp; task_predictions after restarting Uvicorn ML service (same transaction timestamp):
+ 37 |       5 | done       | in_progress| 2026-11-10 13:26:39.668418+05:30
+task_predictions: task_id=5 | delay_probability=0.027 | risk_level=low | predicted_at=2026-11-10 13:26:39.668418+05:30
+</pre>
+
+<!-- SECTION 10 -->
+<h1>10. 36-Check Verification Suite Across 7 Scripts &amp; Test Evidence</h1>
+<p>The system is verified across <strong>36 automated checks in 7 scripts</strong>:</p>
+
+<table>
+  <thead>
+    <tr><th>Test File</th><th>Target Subsystem</th><th>Checks</th><th>Verified Exit Code</th><th>Status</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>server/test_auth.js</code></td><td>JWT Issuance, bcrypt salt 12, duplicate email rejection</td><td>6</td><td>Code 0</td><td><strong>PASS</strong></td></tr>
+    <tr><td><code>server/test_multitenancy.js</code></td><td>Org boundaries (403), RBAC roles, single-use invitations</td><td>10</td><td>Code 0</td><td><strong>PASS</strong></td></tr>
+    <tr><td><code>server/test_analytics.js</code></td><td>SQL metrics aggregation &amp; org 999999 guard (403)</td><td>5</td><td>Code 0</td><td><strong>PASS</strong></td></tr>
+    <tr><td><code>server/test_ai.js</code></td><td>Rule-based summary (<code>89.3%</code> intact), heuristics, 401 guard</td><td>4</td><td>Code 0</td><td><strong>PASS</strong></td></tr>
+    <tr><td><code>server/test_files.js</code></td><td>Multer v2.5 upload, workspace list, download match, 401 guard</td><td>4</td><td>Code 0</td><td><strong>PASS</strong></td></tr>
+    <tr><td><code>server/test_tenant_tasks.js</code></td><td>Cross-tenant 404 on tasks/chat/files + Socket.IO join &amp; send block</td><td>5</td><td>Code 0</td><td><strong>PASS</strong></td></tr>
+    <tr><td><code>ml-service/test_predict.py</code></td><td>High-risk (99.7%) &amp; low-risk (3.2%) ML predictions</td><td>2</td><td>Code 0</td><td><strong>PASS</strong></td></tr>
+    <tr><td><strong>Total Suite</strong></td><td><strong>Full System Verification</strong></td><td><strong>36 Checks</strong></td><td><strong>Zero Errors</strong></td><td><strong>100% PASS</strong></td></tr>
+  </tbody>
+</table>
+
+<!-- SECTION 11 -->
+<h1>11. Master Command-Line Encyclopedia</h1>
+<pre>
+# List All 18 Tables (\dt) &amp; Confirm Zero DB Triggers
+&amp; "C:\Program Files\PostgreSQL\18\bin\psql.exe" -U postgres -d workspace_app -c "\dt"
+&amp; "C:\Program Files\PostgreSQL\18\bin\psql.exe" -U postgres -d workspace_app -c "SELECT tgname FROM pg_trigger WHERE NOT tgisinternal;"
+
+# Start Services in Separate Windows (Express Port 5000 &amp; FastAPI Port 8000)
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd C:\dev\workspace-app\server; node src/server.js"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd C:\dev\workspace-app\ml-service; .\venv\Scripts\python.exe -m uvicorn app.main:app --port 8000"
+
+# Run All 7 Verification Suites Safely (no hardcoded password in scripts)
+cd C:\dev\workspace-app\server
+$sec = Read-Host -Prompt "Demo password" -AsSecureString
+$env:DEMO_PASSWORD = [System.Net.NetworkCredential]::new("", $sec).Password
+node test_auth.js; node test_multitenancy.js; node test_analytics.js; node test_ai.js; node test_files.js; node test_tenant_tasks.js
+cd C:\dev\workspace-app\ml-service; .\venv\Scripts\python.exe test_predict.py
+
+# Clean Leftover Automated Test Data Safely (Dry-run first, then --apply after pg_dump backup)
+cd C:\dev\workspace-app\server
+node cleanup_test_data.js --apply
+</pre>
+
+<!-- SECTION 12 -->
+<h1>12. Technical Troubleshooting &amp; Root Cause Analysis</h1>
+<table>
+  <thead>
+    <tr><th>Symptom / Error</th><th>Root Cause</th><th>Engineering Fix</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>test_tenant_tasks.js</code> initially failed 0/5</td><td>Task, chat, file routes &amp; sockets checked login only; <code>fileController</code> hardcoded <code>orgId = 1</code>.</td><td>Built <code>server/src/utils/tenantAccess.js</code> resolving org membership via workspaces (returns 404).</td></tr>
+    <tr><td><code>HTTP 429</code> during double suite run</td><td>Auth limiter counted successful logins/registrations inside 15-min window.</td><td>Configured <code>skipSuccessfulRequests: true</code> and dev headroom in <code>routes/auth.js</code>.</td></tr>
+    <tr><td>AI summary cut off <code>"accuracy of 89"</code></td><td><code>split(/[.!?]+/)</code> treated decimal point in <code>89.3%</code> as sentence end.</td><td>Changed splitter to <code>/\n+|(?&lt;=[.!?])\s+/</code> preserving decimals.</td></tr>
+    <tr><td>Node <code>localhost:8000</code> ECONNREFUSED on Windows</td><td>Node tries IPv6 <code>::1</code> first while Uvicorn binds IPv4 <code>127.0.0.1:8000</code>.</td><td>Set <code>http://127.0.0.1:8000</code> in <code>.env</code> and 5s <code>AbortController</code> timeout.</td></tr>
+    <tr><td><code>uvicorn.exe</code> launcher path failure</td><td>Executable hardcoded pre-migration path.</td><td>Always invoke via <code>.\venv\Scripts\python.exe -m uvicorn app.main:app --port 8000</code>.</td></tr>
+  </tbody>
+</table>
+
+<!-- SECTION 13 -->
+<h1>13. Viva Voce Oral Defense Playbook &amp; Model Answers</h1>
+
+<div class="step-card">
+  <div class="step-header"><span>Q1: How do you enforce multi-tenant isolation?</span></div>
+  <p><strong>Answer:</strong> <em>"The JWT carries only <code>userId</code>. On org and analytics routes, <code>requireRole</code> checks <code>organization_members</code> and returns HTTP 403 on mismatch. On tasks, chat, files, and Socket.IO (<code>channel:join</code> and every <code>message:send</code>), our shared helper <code>resolveAuthorizedResource</code> in <code>tenantAccess.js</code> resolves organization ownership through the resource's workspace in PostgreSQL — never trusting client org IDs — and returns HTTP 404 across tenants. My own cross-tenant test caught a 0-of-5 gap earlier, and now passes 5 of 5."</em></p>
+</div>
+
+<div class="step-card">
+  <div class="step-header"><span>Q2: Why did Logistic Regression score higher than Random Forest in CV?</span></div>
+  <p><strong>Answer:</strong> <em>"On our 3,000-record synthetic dataset, Logistic Regression scored 90.17% (±0.97%) vs Random Forest 89.03% (±1.03%) because the synthetic rule formula was largely linear. I kept Random Forest for its feature importance rankings and ability to model non-linear interactions, and I would benchmark both again on real team data."</em></p>
+</div>
+
+<div class="step-card">
+  <div class="step-header"><span>Q3: What does the AI Assistant do without an API key, and why doesn't sw.js cache API calls?</span></div>
+  <p><strong>Answer:</strong> <em>"With <code>GEMINI_API_KEY</code> unset, the assistant runs rule-based extractive summarization and heuristic action-item extraction (switching to Google Gemini via API when configured). Meanwhile, <code>sw.js</code> caches only the static app shell and skips all <code>/api</code> routes so live data always comes fresh from PostgreSQL."</em></p>
+</div>
+
+<div class="step-card">
+  <div class="step-header"><span>Q4: How is brute-force protection tested and handled without locking out demos?</span></div>
+  <p><strong>Answer:</strong> <em>"Passwords use <code>bcryptjs</code> with 12 salt rounds, and <code>routes/auth.js</code> uses <code>express-rate-limit</code> with <code>skipSuccessfulRequests: true</code>. Back-to-back runs proved HTTP 429 blocks bursts while allowing legitimate logins through."</em></p>
+</div>
+
+<div style="text-align: center; margin-top: 40px; padding: 15px; border-top: 2px solid #0284c7; font-size: 9pt; color: #64748b;">
+  <strong>End of Master Project Dossier</strong><br>
+  Shivashankargoud B R (Reg No: KUB25MCA019) | Kishkindha University | Department of Computer Applications
+</div>
+
+</body>
+</html>

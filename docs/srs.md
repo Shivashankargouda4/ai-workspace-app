@@ -12,7 +12,7 @@
 ## 1. Introduction
 
 ### 1.1 Purpose
-This Software Requirements Specification (SRS) document details the functional, non-functional, and interface requirements for the **AI-Powered Real-Time Collaborative Workspace with Predictive Analytics**. The platform is engineered to combine multi-tenant project coordination, real-time communication, generative AI meeting assistance, and machine-learning-driven task delay forecasting.
+This Software Requirements Specification (SRS) document details the functional, non-functional, and interface requirements for the **AI-Powered Real-Time Collaborative Workspace with Predictive Analytics**. The platform is engineered to combine multi-tenant project coordination, real-time communication, rule-based extractive summarization and heuristic action-item extraction (with optional Gemini support), and machine-learning-driven task delay forecasting.
 
 ### 1.2 Document Conventions
 - **MUST / SHALL:** Mandatory requirement for system compliance.
@@ -34,7 +34,7 @@ The application follows a distributed, multi-tier microservices architecture:
 - **Presentation Layer:** React 18 SPA bundled via Vite, styled with Tailwind CSS, utilizing `@hello-pangea/dnd` for Kanban drag-and-drop and Recharts for interactive SVG metrics. Configured as an installable Progressive Web App (PWA).
 - **Application Server:** Express.js REST API server (Node.js LTS) utilizing Socket.IO for bidirectional WebSocket events.
 - **Predictive Analytics Microservice:** Python 3.12 FastAPI microservice serving scikit-learn models serialized via Joblib.
-- **Persistence Layer:** PostgreSQL 18 relational database with 16 normalized tables enforcing foreign key referential integrity.
+- **Persistence Layer:** PostgreSQL 18 relational database with 18 normalized tables enforcing foreign key referential integrity (`001_initial_schema.sql` and `003_invitations_and_departments.sql`).
 
 ### 2.2 User Classes & Roles
 1. **Organization Admin:** Creates organizations, manages workspaces, defines departments, and generates cryptographic employee invitations.
@@ -51,22 +51,22 @@ The application follows a distributed, multi-tier microservices architecture:
 
 ### FR-1: Authentication & Token Security
 - **FR-1.1:** The system SHALL hash user passwords using `bcryptjs` with **12 salt rounds** before storage.
-- **FR-1.2:** The system SHALL issue a 15-minute JSON Web Token (JWT) access token upon valid credential submission.
+- **FR-1.2:** The system SHALL issue a 15-minute JSON Web Token (JWT) access token (carrying `userId` only) upon valid credential submission.
 - **FR-1.3:** The system SHALL store a 7-day refresh token in an `httpOnly`, `sameSite: strict` cookie.
-- **FR-1.4:** The system SHALL reject invalid passwords with HTTP 401 Unauthorized and duplicate emails with HTTP 409 Conflict.
+- **FR-1.4:** The system SHALL reject invalid passwords with HTTP 401 Unauthorized, duplicate emails with HTTP 409 Conflict, and rate-limit repeated failed auth attempts via `express-rate-limit` (`skipSuccessfulRequests: true`).
 
 ### FR-2: Multi-Tenancy & Role-Based Access Control (RBAC)
-- **FR-2.1:** Every workspace, project, task, channel, and file SHALL maintain an immutable `org_id` foreign key.
-- **FR-2.2:** The `requireRole` middleware SHALL verify that the authenticated user possesses an active record in `organization_members WHERE org_id = $1` before routing.
-- **FR-2.3:** Cross-tenant access attempts SHALL immediately return HTTP 403 Forbidden.
+- **FR-2.1:** Every workspace, project, task, channel, and file SHALL maintain an `org_id` foreign key and resolve back to `organizations` through its workspace.
+- **FR-2.2:** On organization and analytics routes, `requireRole` SHALL verify active membership in `organization_members WHERE org_id = $1 AND user_id = $2` and return HTTP 403 Forbidden on mismatch.
+- **FR-2.3:** On task, channel, message, file, and Socket.IO handlers, `resolveAuthorizedResource` (`tenantAccess.js`) SHALL resolve the target organization through the resource's workspace in PostgreSQL (ignoring client-supplied org IDs), verify `organization_members`, and return HTTP 404 Not Found for unauthorized cross-tenant requests so resource existence is not revealed.
 - **FR-2.4:** Invitations SHALL be generated as cryptographically secure 32-byte hex tokens, valid for 7 days, and expire immediately upon first use (HTTP 410 Gone on reuse).
 
 ### FR-3: Task Management & Audit History
-- **FR-3.1:** Users SHALL create tasks with priority, complexity (1–10), estimated days, and due dates.
-- **FR-3.2:** Dragging cards between Kanban columns (`todo`, `in_progress`, `review`, `done`) SHALL update the `tasks` table and append an audit row to `task_status_history` capturing `old_status`, `new_status`, `old_progress`, `new_progress`, `changed_by`, and UTC timestamp.
+- **FR-3.1:** Users SHALL create tasks with priority, complexity (1–10), estimated days, and due dates within an authorized project.
+- **FR-3.2:** Dragging cards between Kanban columns (`todo`, `in_progress`, `review`, `done`) SHALL update `tasks` and append an audit row to `task_status_history` inside the same `BEGIN ... COMMIT` transaction in `taskController.js` (with zero database triggers).
 
 ### FR-4: Predictive Analytics Microservice
-- **FR-4.1:** The FastAPI microservice SHALL expose a `POST /predict` endpoint consuming task features.
+- **FR-4.1:** The FastAPI microservice SHALL expose a `POST /predict` endpoint consuming task features, called with a 5-second timeout (`AbortController`) so unreachable ML services log a warning without blocking task status commits.
 - **FR-4.2:** Numeric features SHALL be normalized using `StandardScaler`; categorical features (`priority`) SHALL be transformed via `OneHotEncoder`.
 - **FR-4.3:** Predictions SHALL output a continuous delay probability ($0.0 - 1.0$) and a discrete risk category:
   - Low Risk: $p < 0.40$ (Green)
@@ -74,27 +74,27 @@ The application follows a distributed, multi-tier microservices architecture:
   - High Risk: $p \ge 0.70$ (Red)
 
 ### FR-5: Real-Time Communication
-- **FR-5.1:** Socket.IO SHALL authenticate socket connections using JWT tokens.
-- **FR-5.2:** Messages SHALL follow a **persist-then-broadcast** protocol: records are saved in PostgreSQL `messages` before emitting to channel rooms.
-- **FR-5.3:** Clients reconnecting after network drops SHALL retrieve message history from PostgreSQL via REST API.
+- **FR-5.1:** Socket.IO SHALL authenticate socket connections using JWT tokens and verify organization membership on both `channel:join` and every `message:send` event via `tenantAccess.js`.
+- **FR-5.2:** Messages SHALL follow a **persist-then-broadcast** protocol: records are saved in PostgreSQL `messages` before emitting to authorized channel rooms.
+- **FR-5.3:** Clients reconnecting after network drops SHALL retrieve authorized message history from PostgreSQL via REST API.
 
 ### FR-6: AI Meeting Assistant
-- **FR-6.1:** The system SHALL provide an authenticated endpoint `POST /api/ai/summarize` that generates structured markdown bullet points.
-- **FR-6.2:** The system SHALL provide `POST /api/ai/action-items` that parses transcripts into structured JSON tasks with assignees and priorities.
-- **FR-6.3:** The backend SHALL store the Gemini API key in server-side `.env` and provide a deterministic local NLP fallback if the cloud API is unavailable.
+- **FR-6.1:** The system SHALL provide an authenticated endpoint `POST /api/ai/summarize` that generates bullet-point summaries without breaking on decimal numbers (e.g., `89.3%`).
+- **FR-6.2:** The system SHALL provide `POST /api/ai/action-items` that parses transcripts into structured JSON tasks with priorities and estimated days.
+- **FR-6.3:** By default (when `GEMINI_API_KEY` is unset in `.env`), the backend SHALL execute rule-based extractive summarization and heuristic action-item extraction; when a server-side `GEMINI_API_KEY` is provided, it SHALL call Google Gemini through the API.
 
 ### FR-7: Visual SQL Analytics
 - **FR-7.1:** The server SHALL execute SQL aggregations computing completion rates, overdue task counts, workflow stage distributions, and member active workloads in a single database roundtrip.
 - **FR-7.2:** The frontend SHALL render these metrics using Recharts responsive donut and bar charts.
 
 ### FR-8: Secure File Repository
-- **FR-8.1:** File uploads SHALL enforce a 10 MB size limit and an explicit MIME whitelist (PDF, DOCX, TXT, CSV, PNG, JPG).
-- **FR-8.2:** Uploaded files SHALL be saved with sanitized unique filenames in an isolated directory.
-- **FR-8.3:** File downloads SHALL require JWT authentication and verify organization tenancy.
+- **FR-8.1:** File uploads (`multer@2.5.0`) SHALL enforce a 10 MB size limit and an explicit MIME whitelist (PDF, DOCX, TXT, CSV, PNG, JPG, GIF, WEBP, JSON, ZIP).
+- **FR-8.2:** Uploaded files SHALL be saved with sanitized unique filenames in `server/uploads/` and cleaned up immediately if workspace authorization fails.
+- **FR-8.3:** File uploads, workspace file listings, and file downloads SHALL resolve organization ownership through the workspace via `tenantAccess.js` and verify `organization_members` (returning HTTP 404 across tenants).
 
 ### FR-9: Progressive Web App (PWA)
 - **FR-9.1:** The application SHALL serve a valid Web App Manifest (`manifest.json`) specifying standalone display mode and theme color `#0284c7`.
-- **FR-9.2:** The application SHALL register a Service Worker (`sw.js`) implementing stale-while-revalidate caching for static assets while keeping API calls network-fresh.
+- **FR-9.2:** The application SHALL register a Service Worker (`sw.js`) caching only the static app shell while skipping `/api` and WebSocket requests so live data always comes from the server.
 
 ---
 
@@ -103,13 +103,13 @@ The application follows a distributed, multi-tier microservices architecture:
 ### 4.1 Security Requirements
 - All database queries MUST use parameterized SQL bindings to completely eliminate SQL injection.
 - Security headers MUST be injected on every HTTP response using `helmet`.
-- Cross-Origin Resource Sharing (CORS) MUST be restricted strictly to configured client origins.
-- API endpoints MUST be protected against brute-force attacks via `express-rate-limit`.
+- Cross-Origin Resource Sharing (CORS) MUST support configured client origins with credentials, while single-origin `client/dist` static serving eliminates cross-origin friction in production/tunnel mode.
+- Auth login and registration endpoints MUST be protected against brute-force attempts via `express-rate-limit` (`skipSuccessfulRequests: true`).
 
 ### 4.2 Performance Design Targets
 - **WebSocket Latency Target:** p95 under 500 ms with 20 concurrent users on local network (design target, unbenchmarked under load).
 - **REST API Target:** Authenticated CRUD operations intended to complete under 300 ms on local test environments.
-- **Machine Learning Inference Target:** Inference pipeline via FastAPI intended to complete under 100 ms per task.
+- **Machine Learning Inference Target:** Inference pipeline via FastAPI intended to complete under 100 ms per task (wrapped by a 5-second timeout in the Express caller).
 
 ### 4.3 Data Integrity & Timestamps
 - All timestamps MUST be stored in PostgreSQL using `TIMESTAMPTZ` (UTC) to eliminate timezone skew across distributed teams.
@@ -119,6 +119,6 @@ The application follows a distributed, multi-tier microservices architecture:
 ## 5. System Limitations & Future Scope
 
 1. **Synthetic Machine Learning Data:** The 3,000-record dataset was generated using rule-based probabilistic modeling due to confidentiality of proprietary sprint data. Real-world accuracy requires future deployment across active commercial software teams.
-2. **Collaborative Document Editing:** Shared rich-text editing (CRDT / Yjs) was deferred from the semester build to focus on predictive analytics, multi-tenant RBAC, and real-time chat.
-3. **AI Document Retrieval (RAG):** The AI Assistant currently processes user-provided text inputs; automated indexing and vector embeddings over uploaded files is planned for future work.
-4. **Native Mobile App:** Delivered as a Progressive Web App (PWA) installable on Android rather than a compiled Kotlin/Java native APK.
+2. **Collaborative Document Editing:** Shared rich-text editing (CRDT / Yjs) was deferred from the semester build to focus on predictive analytics, multi-tenant isolation, and real-time chat; the `documents` table remains reserved in PostgreSQL.
+3. **AI Document Retrieval (RAG):** When `GEMINI_API_KEY` is unset, the AI Assistant runs rule-based extractive summarization and heuristic action-item extraction on prompt text; automated indexing and vector embeddings over uploaded files is planned for future work.
+4. **Native Mobile App, Localization & Load Testing:** Delivered as a Progressive Web App (PWA) installable on Android rather than a compiled Kotlin/Java native APK; English-only UI (no multi-language localization); high-concurrency load testing remains future work.
