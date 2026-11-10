@@ -62,6 +62,14 @@ export default function Files() {
     setPreviewState(null);
   };
 
+  useEffect(() => {
+    return () => {
+      if (previewState?.blobUrl) {
+        window.URL.revokeObjectURL(previewState.blobUrl);
+      }
+    };
+  }, [previewState?.blobUrl]);
+
   const handlePreview = async (file) => {
     try {
       const res = await api.get(`/files/${file.id}/download?inline=1`, {

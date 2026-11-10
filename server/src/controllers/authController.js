@@ -170,10 +170,7 @@ const getMe = async (req, res) => {
 const updateProfileSchema = z.object({
   name: z.string().trim().min(2, 'Name must be at least 2 characters').max(100).optional(),
   avatar_url: z
-    .string()
-    .trim()
-    .url('Avatar must be a valid URL')
-    .max(500)
+    .union([z.literal(''), z.string().trim().url('Avatar must be a valid URL').max(500)])
     .optional(),
   currentPassword: z.string().min(1).optional(),
   newPassword: z.string().min(6, 'New password must be at least 6 characters').optional(),

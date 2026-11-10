@@ -27,7 +27,7 @@ import toast from 'react-hot-toast';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useWorkspace } from '../context/WorkspaceContext';
-import { getSocketUrl } from '../utils/realtime';
+import { createAuthenticatedSocket } from '../utils/realtime';
 
 function formatDuration(seconds) {
   const mins = String(Math.floor(seconds / 60)).padStart(2, '0');
@@ -139,7 +139,7 @@ function VideoStreamTile({
 
       {/* Bottom Name & Mic Pill */}
       <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900/75 text-white text-xs font-medium backdrop-blur-xs">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900/75 text-white text-xs font-medium backdrop-blur-sm">
           {micMuted ? (
             <MicOff className="w-3.5 h-3.5 text-rose-400" />
           ) : (
@@ -239,10 +239,7 @@ export default function Meet() {
     const token = localStorage.getItem('accessToken');
     if (!workspaceId || !token || activeMeeting) return undefined;
 
-    const socket = io(getSocketUrl(), {
-      auth: { token },
-      transports: ['websocket', 'polling'],
-    });
+    const socket = createAuthenticatedSocket(io);
 
     socket.on('connect', () => {
       socket.emit('workspace:join', { workspaceId });
@@ -443,11 +440,7 @@ export default function Meet() {
       setMicMuted(!media.hasAudio);
       setHardwareNotice(media.notice);
 
-      const token = localStorage.getItem('accessToken');
-      const socket = io(getSocketUrl(), {
-        auth: { token },
-        transports: ['websocket', 'polling'],
-      });
+      const socket = createAuthenticatedSocket(io);
       socketRef.current = socket;
 
       socket.on('connect', () => {

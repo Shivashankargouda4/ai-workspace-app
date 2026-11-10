@@ -33,7 +33,7 @@ import toast from 'react-hot-toast';
 import api from '../api/client';
 import { useWorkspace } from '../context/WorkspaceContext';
 import { useAuth } from '../context/AuthContext';
-import { getCollabWsUrl, getFreshAuthToken, getSocketUrl, getUserColor } from '../utils/realtime';
+import { createAuthenticatedSocket, getCollabWsUrl, getFreshAuthToken, getUserColor } from '../utils/realtime';
 
 // Configure Monaco locally from bundled workers so the IDE runs cleanly even offline
 if (typeof self !== 'undefined' && !self.__monacoWorkersConfigured) {
@@ -770,10 +770,7 @@ export default function CodeStudio() {
     const token = localStorage.getItem('accessToken');
     if (!workspaceId || !token) return;
 
-    const socket = io(getSocketUrl(), {
-      auth: { token },
-      transports: ['websocket', 'polling'],
-    });
+    const socket = createAuthenticatedSocket(io);
 
     socket.on('connect', () => {
       socket.emit('workspace:join', { workspaceId });

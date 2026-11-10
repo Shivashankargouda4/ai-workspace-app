@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useWorkspace } from '../context/WorkspaceContext';
 import api from '../api/client';
 import toast from 'react-hot-toast';
+import { createAuthenticatedSocket } from '../utils/realtime';
 
 export default function Chat() {
   const { user } = useAuth();
@@ -104,15 +105,7 @@ export default function Chat() {
     const token = localStorage.getItem('accessToken');
     if (!token || !currentChannelId) return;
 
-    const socketUrl =
-      window.location.hostname === 'localhost' && window.location.port === '5173'
-        ? 'http://localhost:5000'
-        : window.location.origin;
-
-    const socket = io(socketUrl, {
-      auth: { token },
-      transports: ['websocket', 'polling'],
-    });
+    const socket = createAuthenticatedSocket(io);
     socketRef.current = socket;
 
     socket.on('connect', () => {

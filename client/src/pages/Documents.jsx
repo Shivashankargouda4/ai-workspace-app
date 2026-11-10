@@ -39,6 +39,7 @@ import toast from 'react-hot-toast';
 import api from '../api/client';
 import { useWorkspace } from '../context/WorkspaceContext';
 import { useAuth } from '../context/AuthContext';
+import { createAuthenticatedSocket } from '../utils/realtime';
 
 const USER_COLORS = ['#4f46e5', '#059669', '#d97706', '#dc2626', '#7c3aed', '#0891b2'];
 
@@ -728,15 +729,7 @@ export default function Documents() {
     const token = localStorage.getItem('accessToken');
     if (!workspaceId || !token) return;
 
-    const socketUrl =
-      window.location.hostname === 'localhost' && window.location.port === '5173'
-        ? 'http://localhost:5000'
-        : window.location.origin;
-
-    const socket = io(socketUrl, {
-      auth: { token },
-      transports: ['websocket', 'polling'],
-    });
+    const socket = createAuthenticatedSocket(io);
 
     socket.on('connect', () => {
       socket.emit('workspace:join', { workspaceId });

@@ -17,6 +17,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { useWorkspace } from '../context/WorkspaceContext';
 import api from '../api/client';
+import { createAuthenticatedSocket } from '../utils/realtime';
 
 function ProfileSettingsModal({ user, onClose, onSaved }) {
   const [name, setName] = useState(user?.name || '');
@@ -46,7 +47,7 @@ function ProfileSettingsModal({ user, onClose, onSaved }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
           <div className="flex items-center gap-2">
@@ -171,15 +172,7 @@ export default function Navbar() {
     const token = localStorage.getItem('accessToken');
     if (!user || !token) return;
 
-    const socketUrl =
-      window.location.hostname === 'localhost' && window.location.port === '5173'
-        ? 'http://localhost:5000'
-        : window.location.origin;
-
-    const socket = io(socketUrl, {
-      auth: { token },
-      transports: ['websocket', 'polling'],
-    });
+    const socket = createAuthenticatedSocket(io);
 
     socket.on('notification:new', (savedNotif) => {
       setNotifData((prev) => ({

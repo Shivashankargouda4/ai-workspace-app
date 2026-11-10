@@ -49,3 +49,28 @@ export async function getFreshAuthToken(forceRefresh = false) {
   }
   return existing || '';
 }
+
+/**
+ * Create a Socket.IO client whose handshake automatically refreshes expiring 15m JWTs.
+ */
+export function createAuthenticatedSocket(ioClient) {
+  const socket = ioClient(getSocketUrl(), {
+    auth: (cb) => {
+      getFreshAuthToken(false)
+        .then((fresh) => cb({ token: fresh || localStorage.getItem('accessToken') || '' }))
+        .catch(() => cb({ token: localStorage.getItem('accessToken') || '' }));
+    },
+    transports: ['websocket', 'polling'],
+  });
+
+  let refreshedOnce = false;
+  socket.on('connect_error', async (err) => {
+    if (!refreshedOnce && /auth|token|jwt/i.test(err?.message || '')) {
+      refreshedOnce = true;
+      await getFreshAuthToken(true);
+      socket.connect();
+    }
+  });
+
+  return socket;
+}
