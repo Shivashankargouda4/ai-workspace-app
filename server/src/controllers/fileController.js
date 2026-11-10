@@ -2,6 +2,17 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const db = require('../config/db');
+const { resolveAuthorizedResource } = require('../utils/tenantAccess');
+
+const cleanupTempUpload = (file) => {
+  if (file && file.path && fs.existsSync(file.path)) {
+    try {
+      fs.unlinkSync(file.path);
+    } catch (unlinkErr) {
+      console.warn('Temp upload cleanup notice:', unlinkErr.message);
+    }
+  }
+};
 
 // Ensure upload directory exists
 const UPLOADS_DIR = path.join(__dirname, '../../uploads');
@@ -55,17 +66,25 @@ const uploadFile = async (req, res) => {
       return res.status(400).json({ error: 'No file uploaded.' });
     }
 
-    const { workspaceId, orgId } = req.body;
-    const finalOrgId = orgId || req.orgId || 1;
-    const finalWorkspaceId = workspaceId || 1;
+    const { workspaceId } = req.body;
+    if (!workspaceId) {
+      cleanupTempUpload(req.file);
+      return res.status(400).json({ error: 'Workspace ID is required.' });
+    }
+
+    const workspace = await resolveAuthorizedResource('workspace', workspaceId, req.user.id);
+    if (!workspace) {
+      cleanupTempUpload(req.file);
+      return res.status(404).json({ error: 'Workspace not found.' });
+    }
 
     const result = await db.query(
       `INSERT INTO files (workspace_id, org_id, name, path, mime_type, size, uploaded_by)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
       [
-        finalWorkspaceId,
-        finalOrgId,
+        workspace.id,
+        workspace.resolved_org_id,
         req.file.originalname,
         req.file.filename,
         req.file.mimetype,
@@ -79,6 +98,7 @@ const uploadFile = async (req, res) => {
       file: result.rows[0],
     });
   } catch (error) {
+    cleanupTempUpload(req.file);
     console.error('File upload error:', error);
     res.status(500).json({ error: 'Failed to record uploaded file.' });
   }
@@ -87,8 +107,10 @@ const uploadFile = async (req, res) => {
 // List files for a workspace
 const getWorkspaceFiles = async (req, res) => {
   try {
-    const { workspaceId } = req.params;
-    const orgId = req.orgId || 1;
+    const workspace = await resolveAuthorizedResource('workspace', req.params.workspaceId, req.user.id);
+    if (!workspace) {
+      return res.status(404).json({ error: 'Workspace not found.' });
+    }
 
     const result = await db.query(
       `SELECT f.*, u.name as uploader_name, u.email as uploader_email
@@ -96,7 +118,7 @@ const getWorkspaceFiles = async (req, res) => {
        LEFT JOIN users u ON f.uploaded_by = u.id
        WHERE f.workspace_id = $1 AND f.org_id = $2
        ORDER BY f.created_at DESC`,
-      [workspaceId, orgId]
+      [workspace.id, workspace.resolved_org_id]
     );
 
     res.json({ files: result.rows });
@@ -109,19 +131,10 @@ const getWorkspaceFiles = async (req, res) => {
 // Authenticated download endpoint
 const downloadFile = async (req, res) => {
   try {
-    const { fileId } = req.params;
-    const orgId = req.orgId || 1;
-
-    const result = await db.query(
-      `SELECT * FROM files WHERE id = $1 AND org_id = $2`,
-      [fileId, orgId]
-    );
-
-    if (result.rows.length === 0) {
+    const fileRecord = await resolveAuthorizedResource('file', req.params.fileId, req.user.id);
+    if (!fileRecord) {
       return res.status(404).json({ error: 'File not found or access denied.' });
     }
-
-    const fileRecord = result.rows[0];
     const filePath = path.join(UPLOADS_DIR, fileRecord.path);
 
     if (!fs.existsSync(filePath)) {

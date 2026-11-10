@@ -1,5 +1,6 @@
 const { z } = require('zod');
 const db = require('../config/db');
+const { resolveAuthorizedResource } = require('../utils/tenantAccess');
 
 const createTaskSchema = z.object({
   project_id: z.number().int().positive(),
@@ -20,7 +21,10 @@ const updateTaskStatusSchema = z.object({
 // Get tasks for a project
 const getProjectTasks = async (req, res) => {
   try {
-    const projectId = req.params.projectId;
+    const project = await resolveAuthorizedResource('project', req.params.projectId, req.user.id);
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found.' });
+    }
 
     const tasksResult = await db.query(
       `SELECT t.*, 
@@ -31,10 +35,10 @@ const getProjectTasks = async (req, res) => {
        LEFT JOIN task_assignees ta ON t.id = ta.task_id
        LEFT JOIN users u ON ta.user_id = u.id
        LEFT JOIN task_predictions p ON t.id = p.task_id
-       WHERE t.project_id = $1
+       WHERE t.project_id = $1 AND t.org_id = $2
        GROUP BY t.id, p.delay_probability, p.risk_level
        ORDER BY t.created_at DESC`,
-      [projectId]
+      [project.id, project.resolved_org_id]
     );
 
     res.json({ tasks: tasksResult.rows });
@@ -52,13 +56,13 @@ const createTask = async (req, res) => {
 
     await client.query('BEGIN');
 
-    // Get org_id from project
-    const projRes = await client.query('SELECT org_id FROM projects WHERE id = $1', [validatedData.project_id]);
-    if (projRes.rows.length === 0) {
+    // Resolve organization from project -> workspace and verify membership
+    const project = await resolveAuthorizedResource('project', validatedData.project_id, req.user.id, client);
+    if (!project) {
       await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Project not found.' });
     }
-    const orgId = projRes.rows[0].org_id;
+    const orgId = project.resolved_org_id;
 
     // Insert task
     const taskRes = await client.query(
@@ -123,13 +127,12 @@ const updateTaskStatus = async (req, res) => {
 
     await client.query('BEGIN');
 
-    // Fetch existing task
-    const currentRes = await client.query('SELECT * FROM tasks WHERE id = $1', [taskId]);
-    if (currentRes.rows.length === 0) {
+    // Resolve task through project -> workspace and verify organization membership
+    const currentTask = await resolveAuthorizedResource('task', taskId, req.user.id, client);
+    if (!currentTask) {
       await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Task not found.' });
     }
-    const currentTask = currentRes.rows[0];
 
     const newStatus = validatedData.status !== undefined ? validatedData.status : currentTask.status;
     let newProgress = validatedData.progress !== undefined ? validatedData.progress : currentTask.progress;

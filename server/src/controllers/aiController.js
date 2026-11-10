@@ -70,8 +70,11 @@ const summarize = async (req, res) => {
     }
 
     // High-performance intelligent local NLP fallback (if no external API key configured)
-    const sentences = contentToSummarize.split(/[.!?]+/).filter((s) => s.trim().length > 15);
-    const fallbackSummary = sentences.slice(0, 3).map((s) => `• ${s.trim()}`).join('\n') || '• Project discussion is progressing according to schedule with key milestones tracked.';
+    const sentences = contentToSummarize
+      .split(/\n+|(?<=[.!?])\s+/)
+      .map((s) => s.trim().replace(/[.!?]+$/, ''))
+      .filter((s) => s.length > 15);
+    const fallbackSummary = sentences.slice(0, 3).map((s) => `• ${s}`).join('\n') || '• Project discussion is progressing according to schedule with key milestones tracked.';
 
     res.json({
       summary: fallbackSummary,
@@ -122,7 +125,10 @@ const extractActionItems = async (req, res) => {
     }
 
     // Local heuristic action item extractor fallback
-    const lines = validatedData.text.split(/[\n.]+/).filter((l) => l.trim().length > 10);
+    const lines = validatedData.text
+      .split(/\n+|(?<=[.!?])\s+/)
+      .map((l) => l.trim().replace(/[.!?]+$/, ''))
+      .filter((l) => l.length > 10);
     const actionItems = lines.slice(0, 3).map((line, idx) => ({
       title: line.trim().replace(/^[-*•]\s*/, ''),
       priority: idx === 0 ? 'high' : (idx === 1 ? 'medium' : 'low'),
