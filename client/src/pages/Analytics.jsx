@@ -4,6 +4,7 @@ import {
 } from 'recharts';
 import { BarChart3, CheckCircle2, AlertTriangle, Users, TrendingUp, RefreshCw } from 'lucide-react';
 import api from '../api/client';
+import { useWorkspace } from '../context/WorkspaceContext';
 import toast from 'react-hot-toast';
 
 const STATUS_COLORS = {
@@ -20,13 +21,18 @@ const PRIORITY_COLORS = {
 };
 
 export default function Analytics() {
+  const { orgId } = useWorkspace();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const fetchAnalytics = async () => {
+    if (!orgId) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
-      const res = await api.get('/analytics/overview/1');
+      const res = await api.get(`/analytics/overview/${orgId}`);
       setData(res.data);
     } catch (err) {
       console.error('Failed to load analytics', err);
@@ -38,7 +44,7 @@ export default function Analytics() {
 
   useEffect(() => {
     fetchAnalytics();
-  }, []);
+  }, [orgId]);
 
   const statusChartData = (data?.tasks_by_status || []).map((s) => ({
     name: s.status.replace('_', ' ').toUpperCase(),

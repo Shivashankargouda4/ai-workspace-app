@@ -9,8 +9,18 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: 'http://localhost:5000',
-        changeOrigin: true
-      }
+        changeOrigin: true,
+      },
+      '/socket.io': {
+        target: 'http://localhost:5000',
+        ws: true,
+        changeOrigin: true,
+      },
+      '/collab': {
+        target: 'http://localhost:5000',
+        ws: true,
+        changeOrigin: true,
+      },
     }
   }
 })

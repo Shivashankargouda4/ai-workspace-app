@@ -6,5 +6,6 @@ const { requireAuth, requireRole } = require('../middleware/auth');
 router.use(requireAuth);
 
 router.get('/overview/:orgId', requireRole('member'), analyticsController.getOrgAnalytics);
+router.get('/audit/:orgId', requireRole('member'), analyticsController.getOrgAuditHistory);
 
 module.exports = router;

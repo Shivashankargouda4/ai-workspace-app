@@ -23,6 +23,26 @@ function setupChatSocket(io) {
     // Join personal user room for direct notifications
     socket.join(`user:${socket.userId}`);
 
+    // Join workspace room for live document list & workspace updates
+    socket.on('workspace:join', async ({ workspaceId } = {}) => {
+      try {
+        const workspace = await resolveAuthorizedResource('workspace', workspaceId, socket.userId);
+        if (!workspace) {
+          socket.emit('error', { message: 'Workspace not found or access denied.' });
+          return;
+        }
+        socket.join(`workspace:${workspace.id}`);
+      } catch (err) {
+        console.error('Socket workspace join error:', err);
+      }
+    });
+
+    socket.on('workspace:leave', ({ workspaceId } = {}) => {
+      if (workspaceId) {
+        socket.leave(`workspace:${workspaceId}`);
+      }
+    });
+
     // Join channel room (verify organization membership via channel -> workspace)
     socket.on('channel:join', async ({ channelId } = {}) => {
       try {

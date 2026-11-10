@@ -82,3 +82,10 @@ INSERT INTO messages (channel_id, user_id, content) VALUES
 (1, 1, 'Welcome everyone to the AI-Powered Collaborative Workspace! 🚀'),
 (1, 2, 'Great to be here! The backend API setup is progressing smoothly.'),
 (2, 3, 'I am reviewing the task board and preparing the chat components.');
+
+-- 12. Starter Collaborative Document
+INSERT INTO documents (id, workspace_id, org_id, title, content, created_by) VALUES
+(1, 1, 1, 'Project Sprint Notes', 'Shared team notes for Kishkindha Innovation Lab. Open this page in two browser tabs to test real-time CRDT editing and live multi-cursor presence.', 1)
+ON CONFLICT (id) DO NOTHING;
+
+SELECT setval('documents_id_seq', GREATEST((SELECT COALESCE(MAX(id), 1) FROM documents), 1));

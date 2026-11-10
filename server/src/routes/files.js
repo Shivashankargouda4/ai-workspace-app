@@ -11,7 +11,10 @@ router.post('/upload', fileController.upload.single('file'), fileController.uplo
 // List files in a workspace
 router.get('/workspace/:workspaceId', fileController.getWorkspaceFiles);
 
-// Authenticated download
+// Authenticated download / preview
 router.get('/:fileId/download', fileController.downloadFile);
+
+// Delete file
+router.delete('/:fileId', fileController.deleteFile);
 
 module.exports = router;
