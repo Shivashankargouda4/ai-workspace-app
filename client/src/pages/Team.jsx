@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, UserPlus, Copy, Check, KeyRound, Building2, Shield, MessageCircle, AlertCircle } from 'lucide-react';
+import { Users, UserPlus, Copy, Check, KeyRound, Building2, Shield, MessageCircle, AlertCircle, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../api/client';
 import { useWorkspace } from '../context/WorkspaceContext';
@@ -45,6 +45,8 @@ export default function Team() {
   const [joinInput, setJoinInput] = useState('');
   const [joining, setJoining] = useState(false);
   const [joinFeedback, setJoinFeedback] = useState(null);
+  const [revokingInviteId, setRevokingInviteId] = useState(null);
+  const [removingUserId, setRemovingUserId] = useState(null);
 
   const canInvite = currentUserRole === 'admin' || currentUserRole === 'manager';
 
@@ -130,6 +132,36 @@ export default function Team() {
       toast.error(errMsg);
     } finally {
       setJoining(false);
+    }
+  };
+
+  const handleRevokeInvite = async (inv) => {
+    if (!orgId || !inv?.id) return;
+    if (!window.confirm(`Cancel the pending invite for ${inv.email}?`)) return;
+    setRevokingInviteId(inv.id);
+    try {
+      await api.delete(`/orgs/${orgId}/invitations/${inv.id}`);
+      toast.success('Invite revoked.');
+      await loadPendingInvites();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to revoke invite.');
+    } finally {
+      setRevokingInviteId(null);
+    }
+  };
+
+  const handleRemoveMember = async (member) => {
+    if (!orgId || !member?.id) return;
+    if (!window.confirm(`Remove ${member.name} from ${organization?.name || 'this organization'}?`)) return;
+    setRemovingUserId(member.id);
+    try {
+      await api.delete(`/orgs/${orgId}/members/${member.id}`);
+      toast.success(`${member.name} removed from organization.`);
+      await refreshWorkspace(orgId);
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to remove member.');
+    } finally {
+      setRemovingUserId(null);
     }
   };
 
@@ -261,14 +293,26 @@ export default function Team() {
                               Role: {inv.role} • Expires {new Date(inv.expires_at).toLocaleDateString()}
                             </div>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => handleCopy(url)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 rounded text-[11px] font-medium shrink-0"
-                          >
-                            <Copy className="w-3 h-3" />
-                            Copy Link
-                          </button>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleCopy(url)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 rounded text-[11px] font-medium"
+                            >
+                              <Copy className="w-3 h-3" />
+                              Copy Link
+                            </button>
+                            <button
+                              type="button"
+                              disabled={revokingInviteId === inv.id}
+                              onClick={() => handleRevokeInvite(inv)}
+                              title="Revoke invite"
+                              className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 rounded text-[11px] font-medium disabled:opacity-50"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              Revoke
+                            </button>
+                          </div>
                         </div>
                       );
                     })}
@@ -354,42 +398,60 @@ export default function Team() {
                 <th className="py-3 px-6">Email</th>
                 <th className="py-3 px-6">Role</th>
                 <th className="py-3 px-6">Joined</th>
-                <th className="py-3 px-6 text-right">Message</th>
+                <th className="py-3 px-6 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 text-sm">
-              {members.map((m) => (
-                <tr key={m.id} className="hover:bg-slate-50/70">
-                  <td className="py-3.5 px-6 font-medium text-slate-800">{m.name}</td>
-                  <td className="py-3.5 px-6 text-slate-600">{m.email}</td>
-                  <td className="py-3.5 px-6">
-                    <span
-                      className={`px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${
-                        ROLE_BADGES[m.role] || ROLE_BADGES.member
-                      }`}
-                    >
-                      {m.role}
-                    </span>
-                  </td>
-                  <td className="py-3.5 px-6 text-xs text-slate-500">
-                    {m.joined_at ? new Date(m.joined_at).toLocaleDateString() : '—'}
-                  </td>
-                  <td className="py-3.5 px-6 text-right">
-                    {m.id !== user?.id ? (
-                      <button
-                        type="button"
-                        onClick={() => navigate(`/chat?dmUserId=${m.id}`)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-brand-600 hover:text-white text-slate-700 text-xs font-medium transition"
+              {members.map((m) => {
+                const canRemoveThisMember =
+                  canInvite && m.id !== user?.id && (currentUserRole === 'admin' || m.role !== 'admin');
+                return (
+                  <tr key={m.id} className="hover:bg-slate-50/70">
+                    <td className="py-3.5 px-6 font-medium text-slate-800">{m.name}</td>
+                    <td className="py-3.5 px-6 text-slate-600">{m.email}</td>
+                    <td className="py-3.5 px-6">
+                      <span
+                        className={`px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${
+                          ROLE_BADGES[m.role] || ROLE_BADGES.member
+                        }`}
                       >
-                        <MessageCircle className="w-3.5 h-3.5" />
-                        DM
-                      </button>
-                    ) : (
-                      <span className="text-[11px] text-slate-400">You</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
+                        {m.role}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-6 text-xs text-slate-500">
+                      {m.joined_at ? new Date(m.joined_at).toLocaleDateString() : '—'}
+                    </td>
+                    <td className="py-3.5 px-6 text-right">
+                      {m.id !== user?.id ? (
+                        <div className="inline-flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/chat?dmUserId=${m.id}`)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-brand-600 hover:text-white text-slate-700 text-xs font-medium transition"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                            DM
+                          </button>
+                          {canRemoveThisMember && (
+                            <button
+                              type="button"
+                              disabled={removingUserId === m.id}
+                              onClick={() => handleRemoveMember(m)}
+                              title={`Remove ${m.name}`}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white text-xs font-medium transition disabled:opacity-50"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              {removingUserId === m.id ? 'Removing...' : 'Remove'}
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-[11px] text-slate-400">You</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

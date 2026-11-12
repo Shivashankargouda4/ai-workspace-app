@@ -391,6 +391,102 @@ const acceptInvitation = async (req, res) => {
   }
 };
 
+// Revoke a pending invitation link (Manager or Admin)
+const revokeInvitation = async (req, res) => {
+  try {
+    const orgId = Number(req.params.orgId);
+    const inviteId = Number(req.params.inviteId);
+    if (!Number.isInteger(inviteId) || inviteId <= 0) {
+      return res.status(400).json({ error: 'Invalid invitation ID.' });
+    }
+
+    const result = await db.query(
+      `DELETE FROM invitations
+       WHERE id = $1 AND org_id = $2 AND accepted_at IS NULL
+       RETURNING id, email`,
+      [inviteId, orgId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Pending invitation not found or already accepted.' });
+    }
+
+    res.json({ message: 'Invitation revoked successfully.', revokedId: inviteId });
+  } catch (error) {
+    console.error('Revoke invitation error:', error);
+    res.status(500).json({ error: 'Failed to revoke invitation.' });
+  }
+};
+
+// Remove a member from an organization (Manager or Admin; only Admin can remove Admin)
+const removeMember = async (req, res) => {
+  const client = await db.pool.connect();
+  try {
+    const orgId = Number(req.params.orgId);
+    const targetUserId = Number(req.params.userId);
+    if (!Number.isInteger(targetUserId) || targetUserId <= 0) {
+      return res.status(400).json({ error: 'Invalid member user ID.' });
+    }
+    if (targetUserId === req.user.id) {
+      return res.status(400).json({ error: 'You cannot remove yourself from the organization.' });
+    }
+
+    await client.query('BEGIN');
+
+    const targetRes = await client.query(
+      'SELECT role FROM organization_members WHERE org_id = $1 AND user_id = $2',
+      [orgId, targetUserId]
+    );
+    if (targetRes.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Member not found in this organization.' });
+    }
+
+    const targetRole = targetRes.rows[0].role;
+    if (targetRole === 'admin' && req.userOrgRole !== 'admin') {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ error: 'Only an organization Admin can remove another Admin.' });
+    }
+
+    if (targetRole === 'admin') {
+      const adminCountRes = await client.query(
+        "SELECT COUNT(*)::int AS cnt FROM organization_members WHERE org_id = $1 AND role = 'admin'",
+        [orgId]
+      );
+      if ((adminCountRes.rows[0]?.cnt || 0) <= 1) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ error: 'Cannot remove the last remaining Admin of the organization.' });
+      }
+    }
+
+    await client.query(
+      `DELETE FROM task_assignees
+       WHERE user_id = $1 AND task_id IN (SELECT id FROM tasks WHERE org_id = $2)`,
+      [targetUserId, orgId]
+    );
+
+    await client.query(
+      `DELETE FROM workspace_members
+       WHERE user_id = $1 AND workspace_id IN (SELECT id FROM workspaces WHERE org_id = $2)`,
+      [targetUserId, orgId]
+    );
+
+    await client.query(
+      'DELETE FROM organization_members WHERE org_id = $1 AND user_id = $2',
+      [orgId, targetUserId]
+    );
+
+    await client.query('COMMIT');
+    res.json({ message: 'Member removed from organization.', removedUserId: targetUserId });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Remove member error:', error);
+    res.status(500).json({ error: 'Failed to remove organization member.' });
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
   getMyOrgs,
   createOrg,
@@ -400,4 +496,6 @@ module.exports = {
   createWorkspace,
   createInvitation,
   acceptInvitation,
+  revokeInvitation,
+  removeMember,
 };
