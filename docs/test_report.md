@@ -14,8 +14,8 @@
 > **AI Assistance Disclosure:**  
 > AI-assisted development tools were used in building this project.
 
-> **Project Scope Clarification:**  
-> To ensure robust delivery of the core multi-tenant backend, predictive analytics, and real-time communication within the solo development timeframe, **collaborative rich-text editing (Yjs / CRDT)** was deferred as future scope. The database schema retains the `documents` table for future integration.
+> **Project Implementation Scope:**  
+> In addition to multi-tenant access control, predictive analytics, and real-time chat, **collaborative rich-text editing (TipTap + Yjs + Hocuspocus CRDT)** and **collaborative Monaco Code Studio** are fully implemented with live presence cursors, snapshot version history, and PostgreSQL binary state persistence across 21 relational tables.
 
 ---
 
@@ -131,6 +131,6 @@ This report contains only the tests that have been written, automated, and execu
 
 In the interest of academic integrity, the following limitations are explicitly documented:
 1. **Synthetic Machine Learning Data:** The 3,000-record dataset was generated probabilistically; models reflect synthetic pipeline behavior rather than real-world task dynamics.
-2. **Collaborative Document Editing:** Shared rich-text editing (Yjs / CRDT) was deferred to future scope to focus on multi-tenant access control, real-time messaging, and delay forecasting.
+2. **Collaborative Document & Code Editing:** Real-time multi-user document editing (TipTap + Yjs + Hocuspocus CRDT) and in-browser Monaco Code Studio are fully implemented with live presence cursors, snapshot version history, and PostgreSQL binary state persistence.
 3. **AI Document Retrieval:** Without a Gemini API key, the AI Assistant uses rule-based extractive and heuristic engines on submitted text; full-text semantic search (RAG) over uploaded workspace files is future work.
 4. **Mobile Delivery, Localization & Load Testing:** Mobile access is delivered via an installable Progressive Web App (PWA) with manifest and service worker, rather than a compiled native Android APK; the UI is English-only with no multi-language localization; concurrency load testing remains future work.

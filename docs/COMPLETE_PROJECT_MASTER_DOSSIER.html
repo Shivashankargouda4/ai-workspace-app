@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -218,7 +218,7 @@
     <div class="meta-row"><span class="meta-label">Department:</span><span class="meta-val">Department of Computer Applications</span></div>
     <div class="meta-row"><span class="meta-label">Institution:</span><span class="meta-val">Kishkindha University</span></div>
     <div class="meta-row"><span class="meta-label">Active Workspace:</span><span class="meta-val">C:\dev\workspace-app</span></div>
-    <div class="meta-row"><span class="meta-label">Database Engine:</span><span class="meta-val">PostgreSQL 18 (workspace_app - 18 Tables, 0 DB Triggers)</span></div>
+    <div class="meta-row"><span class="meta-label">Database Engine:</span><span class="meta-val">PostgreSQL 18 (workspace_app - 21 Tables, 0 DB Triggers)</span></div>
     <div class="meta-row"><span class="meta-label">Core Tech Stack:</span><span class="meta-val">Express (Node.js) + FastAPI (Python) + React PWA</span></div>
     <div class="meta-row"><span class="meta-label">Automated Checks:</span><span class="meta-val">36 Verified Test Checks Across 7 Suites (Zero Failures)</span></div>
     <div class="meta-row"><span class="meta-label">Document Date:</span><span class="meta-val">November 2026</span></div>
@@ -235,7 +235,7 @@
 <div class="toc">
   <div class="toc-item"><span class="toc-title">1. System Concept, Scope &amp; Academic Disclosures</span><span class="toc-pg">Section 1</span></div>
   <div class="toc-item"><span class="toc-title">2. Ground-Truth File Inventory &amp; Directory Structure</span><span class="toc-pg">Section 2</span></div>
-  <div class="toc-item"><span class="toc-title">3. PostgreSQL 18 Database Architecture (The Real 18 Tables)</span><span class="toc-pg">Section 3</span></div>
+  <div class="toc-item"><span class="toc-title">3. PostgreSQL 18 Database Architecture (The Real 21 Tables)</span><span class="toc-pg">Section 3</span></div>
   <div class="toc-item"><span class="toc-title">4. Multi-Tenant Isolation &amp; Role Hierarchy Implementation</span><span class="toc-pg">Section 4</span></div>
   <div class="toc-item"><span class="toc-title">5. Machine Learning Microservice Evaluation (Exact 3,000-Sample Data)</span><span class="toc-pg">Section 5</span></div>
   <div class="toc-item"><span class="toc-title">6. Rule-Based AI Assistant (+ Optional Gemini) &amp; File Upload Subsystems</span><span class="toc-pg">Section 6</span></div>
@@ -286,7 +286,9 @@ C:\dev\workspace-app\
 |   |-- migrations\
 |   |   |-- 001_initial_schema.sql    # 16 core relational tables &amp; indexes
 |   |   |-- 002_seed_data.sql         # Initial seed data
-|   |   `-- 003_invitations_and_departments.sql # +2 tables (departments, invitations) = 18 total
+|   |   `|-- 003_invitations_and_departments.sql # +2 tables (departments, invitations) = 18 total
+    |   |   |-- 004_v2_features.sql       # +1 table (document_snapshots) = 19 total
+    |   |   `-- 005_code_and_meetings.sql # +2 tables (code_files, meetings) = 21 total
 |   |-- src\
 |   |   |-- config\db.js              # pg.Pool PostgreSQL connection pool
 |   |   |-- utils\tenantAccess.js     # Shared workspace-resolved organization membership helper
@@ -297,7 +299,7 @@ C:\dev\workspace-app\
 |   |   |   |-- chatController.js     # Workspace channel &amp; message history (membership-checked)
 |   |   |   |-- fileController.js     # Multer v2.5.0 secure file upload &amp; workspace-scoped download
 |   |   |   |-- orgController.js      # Tenant organization management &amp; single-use invitations
-|   |   |   `-- taskController.js     # Task CRUD, audit history insert, 5s-timeout ML dispatch
+|   |   |   `-- taskController.js     # Task CRUD, audit history insert, 10s-timeout ML dispatch
 |   |   |-- middleware\auth.js        # requireAuth (userId JWT) &amp; requireRole (organization_members)
 |   |   |-- routes\                   # ai.js, analytics.js, auth.js (rate-limiter), chat.js, files.js, orgs.js, tasks.js
 |   |   |-- sockets\chatSocket.js     # Socket.IO handlers checking membership on join &amp; message:send
@@ -318,15 +320,15 @@ C:\dev\workspace-app\
 |   |-- generate_dataset.py           # Reproducible 3,000-record dataset generator
 |   |-- test_predict.py               # Microservice unit test (2 checks)
 |   `-- train.py                      # 5-fold CV evaluation &amp; model training pipeline
-`-- docs\                             # Defense documentation (synced to 18 tables &amp; 36 checks)
+`-- docs\                             # Defense documentation (synced to 21 tables &amp; 36 checks)
     |-- final_project_report.md, ml_results.md, presentation_slides.html, srs.md
     `-- system_architecture_and_uml.md, test_report.md, viva_presentation_and_defense.md
 </pre>
 
 <!-- SECTION 3 -->
-<h1>3. PostgreSQL 18 Database Architecture (The Real 18 Tables)</h1>
+<h1>3. PostgreSQL 18 Database Architecture (The Real 21 Tables)</h1>
 <p>
-Running <code>\dt</code> against database <code>workspace_app</code> confirms <strong>18 normalized tables</strong> (16 from <code>001_initial_schema.sql</code> plus <code>departments</code> and <code>invitations</code> from <code>003_invitations_and_departments.sql</code>), with <strong>zero database triggers</strong> (<code>SELECT tgname FROM pg_trigger WHERE NOT tgisinternal;</code> returns 0 rows).
+Running <code>\dt</code> against database <code>workspace_app</code> confirms <strong>21 normalized tables</strong> (16 from <code>001_initial_schema.sql</code>, <code>departments</code> and <code>invitations</code> from <code>003_invitations_and_departments.sql</code>, <code>document_snapshots</code> from <code>004_v2_features.sql</code>, and <code>code_files</code> and <code>meetings</code> from <code>005_code_and_meetings.sql</code>), with <strong>zero database triggers</strong> (<code>SELECT tgname FROM pg_trigger WHERE NOT tgisinternal;</code> returns 0 rows).
 </p>
 
 <table>
@@ -358,6 +360,9 @@ Running <code>\dt</code> against database <code>workspace_app</code> confirms <s
     <tr><td>16</td><td><code>task_predictions</code></td><td><code>id SERIAL</code></td><td>-</td><td><strong>ML Output Store:</strong> <code>task_id, delay_probability FLOAT, risk_level ('low','medium','high'), model_version, predicted_at</code></td></tr>
     <tr><td>17</td><td><code>departments</code></td><td><code>id SERIAL</code></td><td><code>org_id REFERENCES organizations</code></td><td><code>name, created_at</code> (from <code>003_invitations_and_departments.sql</code>)</td></tr>
     <tr><td>18</td><td><code>invitations</code></td><td><code>id SERIAL</code></td><td><code>org_id REFERENCES organizations</code></td><td><code>email, role, token UNIQUE, expires_at, accepted_at, created_by</code> (from <code>003_invitations_and_departments.sql</code>)</td></tr>
+    <tr><td>19</td><td><code>document_snapshots</code></td><td><code>id SERIAL</code></td><td><code>org_id REFERENCES organizations</code></td><td><code>document_id REFERENCES documents, snapshot_data BYTEA, created_by REFERENCES users, created_at</code> (from <code>004_v2_features.sql</code>)</td></tr>
+    <tr><td>20</td><td><code>code_files</code></td><td><code>id SERIAL</code></td><td><code>org_id REFERENCES organizations</code></td><td><code>workspace_id, name, language, content TEXT, created_by, created_at, updated_at</code> (from <code>005_code_and_meetings.sql</code>)</td></tr>
+    <tr><td>21</td><td><code>meetings</code></td><td><code>id SERIAL</code></td><td><code>org_id REFERENCES organizations</code></td><td><code>workspace_id, title, room_id, host_id REFERENCES users, started_at, ended_at</code> (from <code>005_code_and_meetings.sql</code>)</td></tr>
   </tbody>
 </table>
 
@@ -413,8 +418,8 @@ The predictive engine resides in <code>ml-service/</code>. Below are the verifie
     <tr><th>Model</th><th>5-Fold Mean Accuracy</th><th>5-Fold Mean ROC-AUC</th><th>Model Behavior</th></tr>
   </thead>
   <tbody>
-    <tr><td><strong>Logistic Regression (Baseline)</strong></td><td><strong>90.17% (±0.97%)</strong></td><td><strong>0.9670 (±0.0059)</strong></td><td>Slightly higher due to linear synthetic generation rules.</td></tr>
-    <tr><td><strong>Random Forest (Primary)</strong></td><td><strong>89.03% (±1.03%)</strong></td><td><strong>0.9568 (±0.0057)</strong></td><td>Kept for non-linear interaction capacity &amp; feature importance rankings.</td></tr>
+    <tr><td><strong>Logistic Regression (Baseline)</strong></td><td><strong>90.17% (Â±0.97%)</strong></td><td><strong>0.9670 (Â±0.0059)</strong></td><td>Slightly higher due to linear synthetic generation rules.</td></tr>
+    <tr><td><strong>Random Forest (Primary)</strong></td><td><strong>89.03% (Â±1.03%)</strong></td><td><strong>0.9568 (Â±0.0057)</strong></td><td>Kept for non-linear interaction capacity &amp; feature importance rankings.</td></tr>
   </tbody>
 </table>
 
@@ -439,7 +444,7 @@ The predictive engine resides in <code>ml-service/</code>. Below are the verifie
   </thead>
   <tbody>
     <tr><td>1</td><td><code>midpoint_progress</code></td><td><strong>38.96%</strong></td><td>Reflects synthetic weighting on schedule midpoint velocity.</td></tr>
-    <tr><td>2</td><td><code>complexity</code></td><td><strong>27.45%</strong></td><td>Complexity scale 1–10 increases schedule variance.</td></tr>
+    <tr><td>2</td><td><code>complexity</code></td><td><strong>27.45%</strong></td><td>Complexity scale 1â€“10 increases schedule variance.</td></tr>
     <tr><td>3</td><td><code>assignee_workload</code></td><td><strong>12.02%</strong></td><td>Parallel active tasks elevate risk.</td></tr>
     <tr><td>4</td><td><code>previous_delays_ratio</code></td><td><strong>10.54%</strong></td><td>Historical delay tendency weights predicted risk.</td></tr>
     <tr><td>5</td><td><code>estimated_days</code></td><td><strong>4.65%</strong></td><td>Longer durations correlate with slippage.</td></tr>
@@ -481,16 +486,16 @@ Two auxiliary subsystems in <code>server/src/controllers/</code>:
 <!-- SECTION 8 -->
 <h1>8. Chronological Execution History (User Actions &amp; Agent Fixes)</h1>
 <div class="step-card">
-  <div class="step-header"><span>Step 1–4: Database, ML Training &amp; PWA Serving</span><span class="tag tag-agent">Agent</span></div>
-  <p>Initialized 18 PostgreSQL tables (<code>001</code> + <code>003</code>), fixed <code>seed_demo.js</code> progress nulls and <code>train.py</code> cp1252 encoding, evaluated 3,000-sample 5-fold CV, and built static <code>client/dist</code> served on port 5000.</p>
+  <div class="step-header"><span>Step 1â€“4: Database, ML Training &amp; PWA Serving</span><span class="tag tag-agent">Agent</span></div>
+  <p>Initialized 21 PostgreSQL tables (<code>001</code> + <code>003</code>), fixed <code>seed_demo.js</code> progress nulls and <code>train.py</code> cp1252 encoding, evaluated 3,000-sample 5-fold CV, and built static <code>client/dist</code> served on port 5000.</p>
 </div>
 <div class="step-card">
-  <div class="step-header"><span>Step 5–7: Android PWA, Workspace Migration &amp; Password Hardening</span><span class="tag tag-user">User Action</span></div>
+  <div class="step-header"><span>Step 5â€“7: Android PWA, Workspace Migration &amp; Password Hardening</span><span class="tag tag-user">User Action</span></div>
   <p>Installed PWA on physical Android phone via HTTPS tunnel, migrated active workspace to clean <code>C:\dev\workspace-app</code>, added <code>update_passwords.js</code> and <code>DEMO_PASSWORD</code> env handling with zero exposed credentials in Git.</p>
 </div>
 <div class="step-card">
   <div class="step-header"><span>Step 8: ML IPv4 Timeout &amp; Cross-Tenant Isolation Hardening</span><span class="tag tag-system">Verified Fix</span></div>
-  <p>Updated <code>taskController.js</code> with a 5-second <code>AbortController</code> timeout + <code>clearTimeout</code>; wrote <code>test_tenant_tasks.js</code> (catching an initial 0/5 gap on sub-routes), built shared <code>server/src/utils/tenantAccess.js</code> resolving org membership via workspaces (passing 5/5), fixed AI decimal splitting, tuned auth rate limiting (<code>skipSuccessfulRequests: true</code>), and cleaned 25 test accounts via <code>cleanup_test_data.js --apply</code>.</p>
+  <p>Updated <code>taskController.js</code> with a 10-second <code>AbortController</code> timeout + <code>clearTimeout</code>; wrote <code>test_tenant_tasks.js</code> (catching an initial 0/5 gap on sub-routes), built shared <code>server/src/utils/tenantAccess.js</code> resolving org membership via workspaces (passing 5/5), fixed AI decimal splitting, tuned auth rate limiting (<code>skipSuccessfulRequests: true</code>), and cleaned 25 test accounts via <code>cleanup_test_data.js --apply</code>.</p>
 </div>
 
 <!-- SECTION 9 -->
@@ -533,7 +538,7 @@ task_predictions: task_id=5 | delay_probability=0.027 | risk_level=low | predict
 <!-- SECTION 11 -->
 <h1>11. Master Command-Line Encyclopedia</h1>
 <pre>
-# List All 18 Tables (\dt) &amp; Confirm Zero DB Triggers
+# List All 21 Tables (\dt) &amp; Confirm Zero DB Triggers
 &amp; "C:\Program Files\PostgreSQL\18\bin\psql.exe" -U postgres -d workspace_app -c "\dt"
 &amp; "C:\Program Files\PostgreSQL\18\bin\psql.exe" -U postgres -d workspace_app -c "SELECT tgname FROM pg_trigger WHERE NOT tgisinternal;"
 
@@ -573,12 +578,12 @@ node cleanup_test_data.js --apply
 
 <div class="step-card">
   <div class="step-header"><span>Q1: How do you enforce multi-tenant isolation?</span></div>
-  <p><strong>Answer:</strong> <em>"The JWT carries only <code>userId</code>. On org and analytics routes, <code>requireRole</code> checks <code>organization_members</code> and returns HTTP 403 on mismatch. On tasks, chat, files, and Socket.IO (<code>channel:join</code> and every <code>message:send</code>), our shared helper <code>resolveAuthorizedResource</code> in <code>tenantAccess.js</code> resolves organization ownership through the resource's workspace in PostgreSQL — never trusting client org IDs — and returns HTTP 404 across tenants. My own cross-tenant test caught a 0-of-5 gap earlier, and now passes 5 of 5."</em></p>
+  <p><strong>Answer:</strong> <em>"The JWT carries only <code>userId</code>. On org and analytics routes, <code>requireRole</code> checks <code>organization_members</code> and returns HTTP 403 on mismatch. On tasks, chat, files, and Socket.IO (<code>channel:join</code> and every <code>message:send</code>), our shared helper <code>resolveAuthorizedResource</code> in <code>tenantAccess.js</code> resolves organization ownership through the resource's workspace in PostgreSQL â€” never trusting client org IDs â€” and returns HTTP 404 across tenants. My own cross-tenant test caught a 0-of-5 gap earlier, and now passes 5 of 5."</em></p>
 </div>
 
 <div class="step-card">
   <div class="step-header"><span>Q2: Why did Logistic Regression score higher than Random Forest in CV?</span></div>
-  <p><strong>Answer:</strong> <em>"On our 3,000-record synthetic dataset, Logistic Regression scored 90.17% (±0.97%) vs Random Forest 89.03% (±1.03%) because the synthetic rule formula was largely linear. I kept Random Forest for its feature importance rankings and ability to model non-linear interactions, and I would benchmark both again on real team data."</em></p>
+  <p><strong>Answer:</strong> <em>"On our 3,000-record synthetic dataset, Logistic Regression scored 90.17% (Â±0.97%) vs Random Forest 89.03% (Â±1.03%) because the synthetic rule formula was largely linear. I kept Random Forest for its feature importance rankings and ability to model non-linear interactions, and I would benchmark both again on real team data."</em></p>
 </div>
 
 <div class="step-card">
@@ -598,3 +603,6 @@ node cleanup_test_data.js --apply
 
 </body>
 </html>
+
+
+

@@ -66,7 +66,7 @@ The application follows a distributed, multi-tier microservices architecture:
 - **FR-3.2:** Dragging cards between Kanban columns (`todo`, `in_progress`, `review`, `done`) SHALL update `tasks` and append an audit row to `task_status_history` inside the same `BEGIN ... COMMIT` transaction in `taskController.js` (with zero database triggers).
 
 ### FR-4: Predictive Analytics Microservice
-- **FR-4.1:** The FastAPI microservice SHALL expose a `POST /predict` endpoint consuming task features, called with a 5-second timeout (`AbortController`) so unreachable ML services log a warning without blocking task status commits.
+- **FR-4.1:** The FastAPI microservice SHALL expose a `POST /predict` endpoint consuming task features, called with a 10-second timeout (`AbortController`) so unreachable ML services log a warning without blocking task status commits.
 - **FR-4.2:** Numeric features SHALL be normalized using `StandardScaler`; categorical features (`priority`) SHALL be transformed via `OneHotEncoder`.
 - **FR-4.3:** Predictions SHALL output a continuous delay probability ($0.0 - 1.0$) and a discrete risk category:
   - Low Risk: $p < 0.40$ (Green)
@@ -109,7 +109,7 @@ The application follows a distributed, multi-tier microservices architecture:
 ### 4.2 Performance Design Targets
 - **WebSocket Latency Target:** p95 under 500 ms with 20 concurrent users on local network (design target, unbenchmarked under load).
 - **REST API Target:** Authenticated CRUD operations intended to complete under 300 ms on local test environments.
-- **Machine Learning Inference Target:** Inference pipeline via FastAPI intended to complete under 100 ms per task (wrapped by a 5-second timeout in the Express caller).
+- **Machine Learning Inference Target:** Inference pipeline via FastAPI intended to complete under 100 ms per task (wrapped by a 10-second timeout in the Express caller).
 
 ### 4.3 Data Integrity & Timestamps
 - All timestamps MUST be stored in PostgreSQL using `TIMESTAMPTZ` (UTC) to eliminate timezone skew across distributed teams.
@@ -119,6 +119,6 @@ The application follows a distributed, multi-tier microservices architecture:
 ## 5. System Limitations & Future Scope
 
 1. **Synthetic Machine Learning Data:** The 3,000-record dataset was generated using rule-based probabilistic modeling due to confidentiality of proprietary sprint data. Real-world accuracy requires future deployment across active commercial software teams.
-2. **Collaborative Document Editing:** Shared rich-text editing (CRDT / Yjs) was deferred from the semester build to focus on predictive analytics, multi-tenant isolation, and real-time chat; the `documents` table remains reserved in PostgreSQL.
+2. **Collaborative Document & Code Editing:** Real-time multi-user document editing (TipTap + Yjs + Hocuspocus CRDT) and in-browser Monaco Code Studio are fully implemented with live presence cursors, snapshot version history, and PostgreSQL binary state persistence.
 3. **AI Document Retrieval (RAG):** When `GEMINI_API_KEY` is unset, the AI Assistant runs rule-based extractive summarization and heuristic action-item extraction on prompt text; automated indexing and vector embeddings over uploaded files is planned for future work.
 4. **Native Mobile App, Localization & Load Testing:** Delivered as a Progressive Web App (PWA) installable on Android rather than a compiled Kotlin/Java native APK; English-only UI (no multi-language localization); high-concurrency load testing remains future work.

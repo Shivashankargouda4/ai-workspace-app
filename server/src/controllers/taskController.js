@@ -115,15 +115,29 @@ async function computeLiveTaskFeaturesAndPredict(client, task, midpointProgress,
       previousDelaysRatio = totalWithDue > 0 ? Number((delayedCnt / totalWithDue).toFixed(2)) : 0.2;
     }
 
-    const mlUrl = process.env.ML_SERVICE_URL || 'http://127.0.0.1:8000';
+    // Midpoint Progress: use the task's actual current progress value.
+    // We pass it honestly to the model; the model was trained on midpoint snapshots,
+    // and progress at or past the schedule midpoint is the most informative reading.
+    // We never invent surrogate values — that distorts predictions.
+    const effectiveMidpoint = Math.max(0, Math.min(100, task.progress || 0));
+
+    // Normalize ML service URL — Render's fromService.property=host returns a bare hostname
+    // without a scheme, so we prepend https:// when no scheme is present.
+    const rawMlUrl = process.env.ML_SERVICE_URL || 'http://127.0.0.1:8000';
+    const mlUrl = rawMlUrl.startsWith('http') ? rawMlUrl : `https://${rawMlUrl}`;
     const mlAbortController = new AbortController();
-    const mlTimeout = setTimeout(() => mlAbortController.abort(), 5000);
+    const mlTimeout = setTimeout(() => mlAbortController.abort(), 10000);
     let mlData = null;
 
     try {
+      const mlHeaders = { 'Content-Type': 'application/json' };
+      if (process.env.ML_API_KEY) {
+        mlHeaders['x-api-key'] = process.env.ML_API_KEY;
+      }
+
       const mlResponse = await fetch(`${mlUrl}/predict`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: mlHeaders,
         signal: mlAbortController.signal,
         body: JSON.stringify({
           priority: task.priority || 'medium',
@@ -132,7 +146,7 @@ async function computeLiveTaskFeaturesAndPredict(client, task, midpointProgress,
           team_size: teamSize,
           assignee_workload: assigneeWorkload,
           previous_delays_ratio: previousDelaysRatio,
-          midpoint_progress: midpointProgress,
+          midpoint_progress: effectiveMidpoint,
         }),
       });
 

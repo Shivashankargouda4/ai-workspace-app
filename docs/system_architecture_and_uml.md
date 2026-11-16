@@ -35,7 +35,7 @@ graph TD
     end
 
     subgraph PersistenceLayer ["Data & Storage Layer"]
-        Postgres[("PostgreSQL 18 Relational DB<br/>(18 Normalized Tables, Multi-Tenant)")]
+        Postgres[("PostgreSQL 18 Relational DB<br/>(21 Normalized Tables, Multi-Tenant)")]
         DiskStorage[("Local File Storage<br/>(server/uploads/ directory)")]
     end
 
@@ -288,7 +288,7 @@ flowchart TD
     System[[AI-Powered Real-Time Collaborative Workspace]]
     MLService[[FastAPI ML Delay Predictor]]
     AIService[[Rule-Based NLP / Optional Gemini API]]
-    DBServer[(PostgreSQL 18 - 18 Tables)]
+    DBServer[(PostgreSQL 18 - 21 Tables)]
 
     User -- "Login credentials, task events, chat messages, file uploads" --> System
     System -- "Auth tokens, live board updates, alerts, analytics, summaries" --> User

@@ -1,11 +1,11 @@
 -- 002_seed_data.sql
 -- Demo seed data for AI-Powered Collaborative Workspace
 
--- 1. Demo Users (passwords hashed for 'password123')
+-- 1. Demo Users (passwords hashed for 'password123' with bcrypt cost 12)
 INSERT INTO users (id, name, email, password_hash, avatar_url) VALUES
-(1, 'Admin Shiva', 'admin@workspace.local', '$2a$10$RP148cJ6WI30EZqJBNcaDe9OM8L3pNEK15O2Uw6pZkDujl6K4d9P2', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Shiva'),
-(2, 'Priya Manager', 'priya@workspace.local', '$2a$10$RP148cJ6WI30EZqJBNcaDe9OM8L3pNEK15O2Uw6pZkDujl6K4d9P2', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Priya'),
-(3, 'Rahul Member', 'rahul@workspace.local', '$2a$10$RP148cJ6WI30EZqJBNcaDe9OM8L3pNEK15O2Uw6pZkDujl6K4d9P2', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Rahul')
+(1, 'Admin Shiva', 'admin@workspace.local', '$2a$12$t/GqWA6xpfpw1mXaKXrZSe2lo74KQVH1SjXuNftL3DRjiWSGv0E3K', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Shiva'),
+(2, 'Priya Manager', 'priya@workspace.local', '$2a$12$t/GqWA6xpfpw1mXaKXrZSe2lo74KQVH1SjXuNftL3DRjiWSGv0E3K', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Priya'),
+(3, 'Rahul Member', 'rahul@workspace.local', '$2a$12$t/GqWA6xpfpw1mXaKXrZSe2lo74KQVH1SjXuNftL3DRjiWSGv0E3K', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Rahul')
 ON CONFLICT (id) DO NOTHING;
 
 ALTER SEQUENCE users_id_seq RESTART WITH 4;

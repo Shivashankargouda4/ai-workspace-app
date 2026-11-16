@@ -1,10 +1,10 @@
 import os
 import joblib
 import pandas as pd
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from typing import Literal
+from typing import Literal, Optional
 
 app = FastAPI(
     title="Task Delay Prediction Microservice",
@@ -12,12 +12,14 @@ app = FastAPI(
     version="1.0.0"
 )
 
+ALLOWED_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5000,http://127.0.0.1:5000").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type", "x-api-key"],
 )
 
 # Load trained model pipeline
@@ -48,11 +50,38 @@ class PredictionResponse(BaseModel):
     model_version: str
 
 @app.get("/health")
-def health():
-    return {"status": "ok", "service": "ML Delay Predictor"}
+def health(response: Response):
+    global model
+    is_loaded = model is not None
+    if not is_loaded and os.path.exists(MODEL_PATH):
+        try:
+            model = joblib.load(MODEL_PATH)
+            is_loaded = True
+        except Exception:
+            is_loaded = False
+
+    if not is_loaded:
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+        return {
+            "status": "degraded",
+            "service": "ML Delay Predictor",
+            "model_loaded": False,
+            "error": "Model binary not loaded or unavailable"
+        }
+
+    return {
+        "status": "ok",
+        "service": "ML Delay Predictor",
+        "model_loaded": True,
+        "model_version": "rf-v1.0"
+    }
 
 @app.post("/predict", response_model=PredictionResponse)
-def predict_delay(task: TaskPredictionInput):
+def predict_delay(task: TaskPredictionInput, x_api_key: Optional[str] = Header(None)):
+    expected_key = os.getenv("ML_API_KEY")
+    if expected_key and x_api_key != expected_key:
+        raise HTTPException(status_code=401, detail="Unauthorized: Invalid ML API Key")
+
     global model
     if model is None:
         if os.path.exists(MODEL_PATH):

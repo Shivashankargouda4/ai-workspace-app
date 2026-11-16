@@ -44,10 +44,10 @@ async function ensureDatabaseReady() {
       }
       console.log('🗄️ Initialized database schema (001 + 003 + 004 + 005).');
 
-      if (process.env.NODE_ENV !== 'production' && process.env.SEED_DEMO_DATA === 'true') {
+      if (process.env.SEED_DEMO_DATA === 'true') {
         const seedSql = fs.readFileSync(path.join(migrationsDir, '002_seed_data.sql'), 'utf8');
         await client.query(seedSql);
-        console.log('🌱 Seeded local demo data (SEED_DEMO_DATA=true).');
+        console.log('🌱 Seeded demo data (SEED_DEMO_DATA=true).');
       }
     } else {
       if (!invitations_tbl) {

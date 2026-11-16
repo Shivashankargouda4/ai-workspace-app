@@ -13,6 +13,9 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
+    envVars:
+      - key: ML_API_KEY
+        generateValue: true
 
   - type: web
     name: workspace-app
@@ -25,7 +28,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: SEED_DEMO_DATA
-        value: "false"
+        value: "true"
       - key: DATABASE_URL
         fromDatabase:
           name: workspace-db
@@ -40,5 +43,13 @@ services:
         value: 7d
       - key: GEMINI_API_KEY
         sync: false
+      - key: ML_API_KEY
+        fromService:
+          type: web
+          name: workspace-ml
+          envVarKey: ML_API_KEY
       - key: ML_SERVICE_URL
-        sync: false
+        fromService:
+          type: web
+          name: workspace-ml
+          property: host

@@ -8,6 +8,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 
+const db = require('./config/db');
 const setupChatSocket = require('./sockets/chatSocket');
 const { attachCollabServer, flushCollabStores } = require('./collab/hocuspocusServer');
 const { ensureDatabaseReady } = require('./config/initDb');
@@ -28,11 +29,47 @@ app.set('trust proxy', 1);
 const server = http.createServer(app);
 
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
+const isProduction = process.env.NODE_ENV === 'production';
+
+// Allowed CORS origins — in production, restrict strictly to configured client domain
+const allowedOrigins = isProduction
+  ? [CLIENT_URL, process.env.RENDER_EXTERNAL_URL].filter(Boolean)
+  : [
+      CLIENT_URL,
+      'http://localhost:5173',
+      'http://localhost:5000',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:5000',
+    ];
+
+const corsOriginHandler = (origin, callback) => {
+  // Allow non-browser requests (mobile native, curl, postman, same-origin)
+  if (!origin) return callback(null, true);
+
+  if (allowedOrigins.includes(origin)) return callback(null, true);
+
+  // In development, allow local network IPs for mobile testing (e.g. 192.168.x.x, 10.x.x.x)
+  if (!isProduction) {
+    if (/^http:\/\/192\.168\.\d+\.\d+(:\d+)?$/.test(origin) || /^http:\/\/10\.\d+\.\d+\.\d+(:\d+)?$/.test(origin)) {
+      return callback(null, true);
+    }
+  }
+
+  if (process.env.RENDER_EXTERNAL_URL && origin === process.env.RENDER_EXTERNAL_URL) {
+    return callback(null, true);
+  }
+
+  if (isProduction) {
+    return callback(new Error(`CORS policy: Access denied for origin ${origin}`));
+  }
+
+  callback(null, true);
+};
 
 // Socket.IO Setup
 const io = new Server(server, {
   cors: {
-    origin: (origin, callback) => callback(null, true),
+    origin: corsOriginHandler,
     credentials: true,
   },
 });
@@ -42,23 +79,69 @@ attachCollabServer(server);
 // Make io accessible in requests if needed
 app.set('io', io);
 
-// Security & Utility Middlewares (permissive CSP for tunnel & PWA assets)
-app.use(helmet({ contentSecurityPolicy: false }));
+// Security Middlewares with Content Security Policy tuned for Monaco, TipTap & WebRTC
+// Note: 'unsafe-eval' is strictly required by the Monaco Code Editor for in-browser syntax tokenization
+// and Web Worker execution. 'unsafe-inline' is required for Vite styles & TipTap editor styling.
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+        imgSrc: ["'self'", "data:", "blob:", "https://api.dicebear.com", "https://*.dicebear.com"],
+        connectSrc: [
+          "'self'",
+          "ws:",
+          "wss:",
+          "https://*.onrender.com",
+          "https://api.dicebear.com",
+          ...(isProduction ? [] : ["http://localhost:*", "http://127.0.0.1:*"]),
+        ],
+        mediaSrc: ["'self'", "blob:"],
+        workerSrc: ["'self'", "blob:"],
+        frameSrc: ["'self'"],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+  })
+);
+
 app.use(
   cors({
-    origin: (origin, callback) => callback(null, true),
+    origin: corsOriginHandler,
     credentials: true,
   })
 );
 app.use(express.json());
 app.use(cookieParser());
 
-// API Health Check
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
+// Robust API Health Check verifying PostgreSQL connection readiness
+app.get('/api/health', async (req, res) => {
+  let dbStatus = 'disconnected';
+  let dbLatencyMs = null;
+  let dbError = null;
+
+  try {
+    const t0 = Date.now();
+    await db.query('SELECT 1');
+    dbLatencyMs = Date.now() - t0;
+    dbStatus = 'connected';
+  } catch (err) {
+    dbError = err.message;
+  }
+
+  const isHealthy = dbStatus === 'connected';
+  res.status(isHealthy ? 200 : 503).json({
+    status: isHealthy ? 'ok' : 'degraded',
     timestamp: new Date().toISOString(),
     service: 'AI-Powered Collaborative Workspace API',
+    database: {
+      status: dbStatus,
+      latencyMs: dbLatencyMs,
+      ...(dbError && { error: dbError }),
+    },
   });
 });
 
@@ -112,8 +195,13 @@ const PORT = process.env.PORT || 5000;
 async function startServer() {
   try {
     await ensureDatabaseReady();
+    console.log('✅ PostgreSQL database schema verified and ready.');
   } catch (err) {
-    console.error('Database initialization warning:', err.message);
+    console.error('❌ Database initialization error:', err.message);
+    if (process.env.NODE_ENV === 'production') {
+      console.error('Fatal: Cannot start production server without database.');
+      process.exit(1);
+    }
   }
 
   server.listen(PORT, () => {

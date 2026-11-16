@@ -1,387 +1,546 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Viva Voce Presentation - Shivashankargoud B R (KUB25MCA019)</title>
+  <title>Viva Voce Presentation - AI-Powered Collaborative Workspace</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    :root {
+      --bg-color: #f1f5f9;
+      --text-main: #0f172a;
+      --text-body: #334155;
+      --text-muted: #64748b;
+      --slide-bg: #ffffff;
+      --card-bg: #ffffff;
+      --card-alt: #f8fafc;
+      --border-color: #e2e8f0;
+      --border-dark: #cbd5e1;
+      --shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.08);
+      --primary: #0284c7;
+      --primary-dark: #1d4ed8;
+      --emerald: #059669;
+      --rose: #dc2626;
+      --indigo: #4f46e5;
+      --problem-bg: #fef2f2;
+      --solution-bg: #f0fdf4;
+    }
+
+    [data-theme="dark"] {
+      --bg-color: #0b0f19;
+      --text-main: #f8fafc;
+      --text-body: #cbd5e1;
+      --text-muted: #94a3b8;
+      --slide-bg: #0f172a;
+      --card-bg: #1e293b;
+      --card-alt: #161f30;
+      --border-color: #1e293b;
+      --border-dark: #334155;
+      --shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7);
+      --primary: #38bdf8;
+      --primary-dark: #0284c7;
+      --emerald: #34d399;
+      --rose: #f43f5e;
+      --indigo: #818cf8;
+      --problem-bg: #1e293b;
+      --solution-bg: #1e293b;
+    }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background: #0f172a;
-      color: #f8fafc;
-      overflow: hidden;
-      height: 100vh;
+      font-family: Calibri, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg-color);
+      color: var(--text-body);
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
+      font-size: 18px;
+      transition: background 0.3s ease, color 0.3s ease;
     }
-    .slide-container {
+
+    .top-header {
+      padding: 14px 40px;
+      background: var(--slide-bg);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .top-header .brand {
+      font-weight: 700;
+      font-size: 1.2rem;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      letter-spacing: 0.02em;
+    }
+    .badge {
+      display: inline-block;
+      padding: 5px 14px;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .badge-blue { background: rgba(2, 132, 199, 0.12); color: var(--primary); border: 1px solid rgba(2, 132, 199, 0.25); }
+    .badge-emerald { background: rgba(5, 150, 105, 0.12); color: var(--emerald); border: 1px solid rgba(5, 150, 105, 0.25); }
+    
+    .theme-toggle {
+      background: var(--card-alt);
+      border: 1px solid var(--border-color);
+      color: var(--text-body);
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .theme-toggle:hover { background: var(--border-color); }
+
+    .slide-wrapper {
       flex: 1;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 40px;
+      padding: 24px 32px;
       position: relative;
     }
     .slide {
       display: none;
       width: 100%;
-      max-width: 1100px;
-      background: #1e293b;
-      border: 1px solid #334155;
+      max-width: 1160px;
+      background: var(--slide-bg);
+      border: 1px solid var(--border-color);
       border-radius: 20px;
-      padding: 48px;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-      animation: fadeIn 0.3s ease-in-out;
+      padding: 40px 52px;
+      box-shadow: var(--shadow);
+      animation: slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .slide.active { display: block; }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+    
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(14px) scale(0.99); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
     }
-    h1 { font-size: 2.2rem; color: #38bdf8; margin-bottom: 12px; line-height: 1.2; }
-    h2 { font-size: 1.6rem; color: #38bdf8; margin-bottom: 24px; border-bottom: 2px solid #334155; padding-bottom: 12px; }
-    h3 { font-size: 1.2rem; color: #94a3b8; margin-top: 16px; margin-bottom: 8px; }
-    p { font-size: 1.1rem; line-height: 1.6; color: #cbd5e1; margin-bottom: 16px; }
-    ul { list-style: none; margin-bottom: 20px; }
-    li { font-size: 1.1rem; line-height: 1.7; color: #e2e8f0; margin-bottom: 10px; position: relative; padding-left: 28px; }
-    li::before { content: "▸"; position: absolute; left: 0; color: #38bdf8; font-weight: bold; font-size: 1.3rem; }
-    .badge { display: inline-block; padding: 4px 12px; border-radius: 6px; font-weight: 600; font-size: 0.85rem; margin-right: 8px; }
-    .badge-blue { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid #38bdf8; }
-    .badge-green { background: rgba(52, 211, 153, 0.2); color: #34d399; border: 1px solid #34d399; }
-    .badge-amber { background: rgba(251, 191, 36, 0.2); color: #fbbf24; border: 1px solid #fbbf24; }
-    .badge-red { background: rgba(248, 113, 113, 0.2); color: #f87171; border: 1px solid #f87171; }
-    table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 1rem; }
-    th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #334155; }
-    th { background: #0f172a; color: #38bdf8; font-weight: 600; }
-    tr:hover { background: #243247; }
-    .footer-bar {
-      height: 60px;
-      background: #090d16;
-      border-top: 1px solid #1e293b;
+
+    h1 { font-size: 2.6rem; color: var(--text-main); line-height: 1.25; margin-bottom: 14px; font-weight: 800; }
+    h2 { font-size: 1.85rem; color: var(--primary); margin-bottom: 22px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; font-weight: 700; }
+    h3 { font-size: 1.35rem; color: var(--text-main); margin: 12px 0 6px 0; font-weight: 700; }
+    p { font-size: 1.18rem; line-height: 1.6; color: var(--text-body); margin-bottom: 12px; }
+    ul { list-style: none; margin: 12px 0 16px 0; }
+    li {
+      font-size: 1.15rem;
+      line-height: 1.55;
+      color: var(--text-body);
+      margin-bottom: 12px;
+      padding-left: 28px;
+      position: relative;
+    }
+    li::before {
+      content: "➔";
+      position: absolute;
+      left: 0;
+      color: var(--primary);
+      font-size: 1.05rem;
+    }
+    
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+      margin-top: 14px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 22px 26px;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03);
+    }
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.08);
+    }
+    .card-problem { background: var(--problem-bg); border-left: 6px solid var(--rose); }
+    .card-solution { background: var(--solution-bg); border-left: 6px solid var(--emerald); }
+    
+    .tier-box {
+      background: var(--card-alt);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 18px 24px;
+      margin-bottom: 12px;
+      transition: transform 0.2s;
+    }
+    .tier-box:hover { transform: translateY(-2px); }
+    
+    .tier-label {
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+    }
+    .connector-text {
+      text-align: center;
+      font-size: 1rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin: 8px 0;
+    }
+
+    .btn-live {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: linear-gradient(135deg, #0284c7 0%, #1d4ed8 100%);
+      color: #ffffff;
+      padding: 18px 42px;
+      border-radius: 12px;
+      font-size: 1.35rem;
+      font-weight: 800;
+      text-decoration: none;
+      transition: all 0.25s ease;
+      box-shadow: 0 10px 25px -5px rgba(2, 132, 199, 0.4);
+      border: 2px solid #0284c7;
+      cursor: pointer;
+    }
+    .btn-live:hover {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 16px 32px -5px rgba(2, 132, 199, 0.6);
+      background: linear-gradient(135deg, #1d4ed8 0%, #0284c7 100%);
+    }
+
+    .bottom-bar {
+      height: 64px;
+      background: var(--slide-bg);
+      border-top: 1px solid var(--border-color);
+      padding: 0 40px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 40px;
+      box-shadow: 0 -2px 4px rgba(0,0,0,0.02);
     }
-    .controls { display: flex; gap: 12px; }
-    button {
-      background: #1e293b;
-      border: 1px solid #475569;
-      color: #f8fafc;
-      padding: 8px 18px;
+    .nav-buttons { display: flex; gap: 12px; align-items: center; }
+    .btn-nav {
+      background: var(--card-alt);
+      border: 1px solid var(--border-color);
+      color: var(--text-body);
+      padding: 10px 20px;
       border-radius: 8px;
-      font-size: 0.95rem;
+      font-size: 1rem;
+      font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.15s;
     }
-    button:hover { background: #334155; border-color: #38bdf8; }
-    .speaker-notes {
-      margin-top: 20px;
-      background: #0f172a;
-      border-left: 4px solid #38bdf8;
-      padding: 16px;
-      border-radius: 6px;
-      font-size: 0.95rem;
-      color: #94a3b8;
-    }
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .btn-nav:hover { background: var(--border-dark); }
+    .slide-indicator { color: var(--text-muted); font-size: 1rem; font-weight: 600; }
+    
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; background: var(--card-bg); }
+    th, td { padding: 12px 16px; border: 1px solid var(--border-color); text-align: left; }
+    th { background: var(--card-alt); color: var(--primary); font-size: 1.05rem; }
+    td { font-size: 1.05rem; color: var(--text-body); }
   </style>
 </head>
 <body>
 
-  <div class="slide-container">
+  <div class="top-header">
+    <div class="brand">
+      <span>AI Collaborative Workspace</span>
+      <span class="badge badge-blue">MCA Major Project</span>
+      <span class="badge badge-emerald">6 Core Slides</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <div style="color: var(--text-muted); font-size: 0.95rem;">
+        Candidate: <strong style="color: var(--text-main);">Shivashankargoud B R</strong> (KUB25MCA019)
+      </div>
+      <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌓 Light / Dark</button>
+    </div>
+  </div>
 
-    <!-- Slide 1: Title -->
+  <div class="slide-wrapper">
+
+    <!-- SLIDE 1: TITLE SLIDE -->
     <div class="slide active">
-      <div style="text-align: center; padding: 40px 0;">
-        <span class="badge badge-blue">MCA Major Project (2026)</span>
-        <h1 style="font-size: 2.8rem; margin: 24px 0 16px 0;">AI-Powered Real-Time Collaborative Workspace with Predictive Analytics</h1>
-        <p style="font-size: 1.3rem; color: #94a3b8; max-width: 800px; margin: 0 auto 36px auto;">
-          A full-stack collaborative platform integrating WebSocket communication with machine learning task delay forecasting and rule-based meeting assistance (with optional Gemini support).
+      <div style="color: var(--primary); font-size: 1.05rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">
+        Kishkindha University, Ballari • Department of Computer Applications
+      </div>
+      <h1>AI-Powered Real-Time Collaborative Workspace</h1>
+      <p style="font-size: 1.25rem; color: var(--text-muted); margin-bottom: 24px;">
+        An All-in-One Team Platform with Task Management, Machine Learning Delay Prediction, Live Documents, Monaco Code Studio, and WebRTC Video Meetings
+      </p>
+
+      <div class="grid-2" style="margin-top: 24px;">
+        <div class="card" style="border-left: 6px solid var(--primary); background: var(--card-alt);">
+          <div style="font-size: 0.9rem; color: var(--primary); font-weight: 700; text-transform: uppercase;">Candidate Details</div>
+          <p style="margin-top: 6px; font-size: 1.35rem; color: var(--text-main); font-weight: 800;">Shivashankargoud B R</p>
+          <p style="font-size: 1.1rem; margin-bottom: 0;">Register No: <strong style="color: var(--text-main);">KUB25MCA019</strong></p>
+          <p style="color: var(--text-muted); font-size: 1rem;">Master of Computer Applications (MCA)</p>
+        </div>
+        <div class="card" style="border-left: 6px solid var(--indigo); background: var(--card-alt);">
+          <div style="font-size: 0.9rem; color: var(--indigo); font-weight: 700; text-transform: uppercase;">Academic & Technology Scope</div>
+          <p style="margin-top: 6px; font-size: 1.35rem; color: var(--text-main); font-weight: 800;">Full-Stack Web & Applied ML</p>
+          <p style="font-size: 1.1rem; margin-bottom: 0;">React 18 • Node.js • Python FastAPI • PostgreSQL 18</p>
+          <p style="color: var(--text-muted); font-size: 1rem;">Major Project Defense (2025 – 2026)</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 2: ABSTRACT -->
+    <div class="slide">
+      <h2>Slide 2: Project Abstract</h2>
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <div class="card" style="border-left: 6px solid var(--primary);">
+          <h3 style="color: var(--primary); margin-top: 0;">1. What is this Project?</h3>
+          <p style="margin-bottom: 0;">
+            A single, complete website that brings together everything a software or college team needs: Task boards, Live Team Chat, Shared Documents, an In-Browser Code Editor, and Video Calling—all in one place under a single login.
+          </p>
+        </div>
+        <div class="card card-problem">
+          <h3 style="color: var(--rose); margin-top: 0;">2. The Main Problem It Solves</h3>
+          <p style="margin-bottom: 0;">
+            Today, teams waste valuable time switching between 5 separate tools (Slack for chat, Trello for tasks, Google Docs for notes, VS Code for coding, and Zoom for video calls). This causes confusion, lost notes, distraction, and missed deadlines.
+          </p>
+        </div>
+        <div class="card card-solution">
+          <h3 style="color: var(--emerald); margin-top: 0;">3. The Smart AI Advantage</h3>
+          <p style="margin-bottom: 0;">
+            Unlike traditional tools, our system has built-in Machine Learning (Random Forest) that proactively predicts whether a task will be delayed before the deadline hits. It also integrates Google Gemini AI to turn meeting notes into assigned tasks with one click.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 3: OBJECTIVES OF YOUR PROJECT -->
+    <div class="slide">
+      <h2>Slide 3: Objectives of the Project</h2>
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div class="card" style="padding: 16px 22px; display: flex; align-items: flex-start; gap: 18px;">
+          <span class="badge badge-blue" style="font-size: 1.05rem; padding: 6px 14px;">01</span>
+          <div>
+            <strong style="font-size: 1.25rem; color: var(--text-main);">Build an All-in-One Team Workspace</strong>
+            <p style="font-size: 1.05rem; margin: 4px 0 0 0;">Replace 5 separate applications with one unified dashboard combining Kanban tasks, team chat, collaborative documents, code editor, and video meetings.</p>
+          </div>
+        </div>
+        <div class="card" style="padding: 16px 22px; display: flex; align-items: flex-start; gap: 18px;">
+          <span class="badge badge-blue" style="font-size: 1.05rem; padding: 6px 14px;">02</span>
+          <div>
+            <strong style="font-size: 1.25rem; color: var(--text-main);">Predict Task Delays with Machine Learning</strong>
+            <p style="font-size: 1.05rem; margin: 4px 0 0 0;">Deploy a trained Random Forest ML model that calculates delay risk (Low, Medium, High) in real time so project managers can fix bottlenecks early.</p>
+          </div>
+        </div>
+        <div class="card" style="padding: 16px 22px; display: flex; align-items: flex-start; gap: 18px;">
+          <span class="badge badge-blue" style="font-size: 1.05rem; padding: 6px 14px;">03</span>
+          <div>
+            <strong style="font-size: 1.25rem; color: var(--text-main);">Enable Live Real-Time Collaboration</strong>
+            <p style="font-size: 1.05rem; margin: 4px 0 0 0;">Allow multiple team members to edit documents and code simultaneously without saving conflicts, powered by real-time CRDT algorithms.</p>
+          </div>
+        </div>
+        <div class="card" style="padding: 16px 22px; display: flex; align-items: flex-start; gap: 18px;">
+          <span class="badge badge-blue" style="font-size: 1.05rem; padding: 6px 14px;">04</span>
+          <div>
+            <strong style="font-size: 1.25rem; color: var(--text-main);">Enforce Strict Security & Role Permissions</strong>
+            <p style="font-size: 1.05rem; margin: 4px 0 0 0;">Provide complete team privacy using JWT tokens and database tenant isolation with clear roles: Admin (Lead), Manager, and Member.</p>
+          </div>
+        </div>
+        <div class="card" style="padding: 16px 22px; display: flex; align-items: flex-start; gap: 18px;">
+          <span class="badge badge-blue" style="font-size: 1.05rem; padding: 6px 14px;">05</span>
+          <div>
+            <strong style="font-size: 1.25rem; color: var(--text-main);">Ensure Cross-Device Access (Mobile & Laptop)</strong>
+            <p style="font-size: 1.05rem; margin: 4px 0 0 0;">Build a responsive Progressive Web App (PWA) with fast loading and zero layout errors on desktops, laptops, tablets, and smartphones.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 4: PROBLEM VS SOLUTION -->
+    <div class="slide">
+      <h2>Slide 4: Problem Statement vs. Proposed Solution</h2>
+      <div class="grid-2">
+        <div class="card card-problem">
+          <h3 style="color: var(--rose); margin-bottom: 14px;">Existing Problems (Current Tools)</h3>
+          <ul>
+            <li><strong>App Overload & High Costs:</strong> Switching between Slack, Jira, Zoom, and Docs wastes 20-30% of daily time.</li>
+            <li><strong>Late Deadline Warnings:</strong> Conventional tools notify managers only after a task is already overdue.</li>
+            <li><strong>Lost Meeting Notes:</strong> Important action items from calls get lost without being recorded as tasks.</li>
+            <li><strong>Data Privacy Risks:</strong> Using multiple separate tools increases the danger of accidental file leaks.</li>
+          </ul>
+        </div>
+        <div class="card card-solution">
+          <h3 style="color: var(--emerald); margin-bottom: 14px;">Our Proposed Solution (This Project)</h3>
+          <ul>
+            <li><strong>Unified All-in-One Hub:</strong> Tasks, Chat, Docs, Code Editor, and Video Calls all under one login.</li>
+            <li><strong>Proactive Machine Learning:</strong> Color-coded badges (Green, Yellow, Red) alert managers early to prevent delays.</li>
+            <li><strong>1-Click AI Task Generation:</strong> Gemini AI reads meeting notes and automatically creates assigned Kanban tasks.</li>
+            <li><strong>Hard Database Isolation:</strong> JWT authentication and SQL organization scoping guarantee 100% data privacy.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 5: SYSTEM DESIGN -->
+    <div class="slide">
+      <h2>Slide 5: System Design & Architecture</h2>
+      <div class="tier-box" style="border-left: 6px solid var(--primary);">
+        <div class="tier-label" style="color: var(--primary);">Tier 1: Frontend User Interface (React 18 + Tailwind CSS)</div>
+        <p style="margin-bottom: 0; font-size: 1.1rem; color: var(--text-main); font-weight: 600;">
+          Kanban Task Board  •  Real-Time Chat  •  Collaborative Docs  •  Monaco Code Studio  •  WebRTC Video Meet
         </p>
-        <div style="background: #0f172a; display: inline-block; padding: 20px 40px; border-radius: 12px; border: 1px solid #334155; text-align: left;">
-          <p style="margin-bottom: 6px;"><strong>Candidate:</strong> Shivashankargoud B R</p>
-          <p style="margin-bottom: 6px;"><strong>Register Number:</strong> KUB25MCA019</p>
-          <p style="margin-bottom: 6px;"><strong>Department:</strong> Department of Computer Applications</p>
-          <p style="margin-bottom: 0;"><strong>Institution:</strong> Kishkindha University</p>
-        </div>
       </div>
-    </div>
 
-    <!-- Slide 2: Problem Statement -->
-    <div class="slide">
-      <h2>1. Problem Statement & Motivation</h2>
+      <div class="connector-text">
+        ↕   HTTPS REST API (JWT Security)   &   Live WebSockets (Socket.IO + CRDT Document Sync)
+      </div>
+
+      <div class="tier-box" style="border-left: 6px solid var(--indigo);">
+        <div class="tier-label" style="color: var(--indigo);">Tier 2: Backend Server & API Gateway (Node.js & Express - Port 5000)</div>
+        <p style="margin-bottom: 0; font-size: 1.1rem; color: var(--text-main); font-weight: 600;">
+          User Login & Tokens  •  Team Role Permissions  •  CRDT Sync Engine  •  Video Call Signaling  •  Audit Logging
+        </p>
+      </div>
+
+      <div class="connector-text">
+        ↙   PostgreSQL Database Connection (SQL)             ↘   Fast HTTP Prediction Requests (REST)
+      </div>
+
       <div class="grid-2">
-        <div>
-          <h3>The Industry Problem</h3>
-          <ul>
-            <li><strong>Reactive Tracking:</strong> Tools like Jira and Trello notify managers only <em>after</em> a deadline is breached.</li>
-            <li><strong>Siloed Tools:</strong> Teams switch between Slack (chat), Trello (cards), and Google Meet, losing context.</li>
-            <li><strong>Multi-Tenant Leaks:</strong> Cloud workspace platforms frequently risk cross-tenant data leakage if access controls are not verified on every SQL query.</li>
-          </ul>
-        </div>
-        <div>
-          <h3>Proposed Solution</h3>
-          <ul>
-            <li><strong>Proactive AI Forecasting:</strong> Captures velocity snapshots at mid-sprint and calculates delay probability.</li>
-            <li><strong>Integrated Real-Time Chat:</strong> Room-level WebSocket multicast with persist-then-broadcast guarantee.</li>
-            <li><strong>Strict Multi-Tenant RBAC:</strong> Hard tenant isolation enforced at both the database and middleware layers.</li>
-          </ul>
-        </div>
-      </div>
-      <div class="speaker-notes">
-        <strong>Spoken Script:</strong> "Traditional project trackers are retrospective. Our innovation introduces proactive risk forecasting into standard Kanban boards so project managers receive early warnings before deadlines slip."
-      </div>
-    </div>
-
-    <!-- Slide 3: Objectives & Scope -->
-    <div class="slide">
-      <h2>2. Project Objectives & System Scope</h2>
-      <ul>
-        <li><strong>Multi-Tenancy & RBAC:</strong> Partition organizations, workspaces, and projects with roles (Admin, Manager, Member) and single-use cryptographic invitations.</li>
-        <li><strong>Interactive Kanban Auditing:</strong> Drag-and-drop task lifecycle management with state transitions logged to <code>task_status_history</code>.</li>
-        <li><strong>Machine Learning Microservice:</strong> FastAPI service returning delay probabilities (p ≥ 0.70 → High Risk) with a 5-second timeout fallback.</li>
-        <li><strong>AI Assistant:</strong> Rule-based extractive summarization and heuristic action-item extraction, with optional Gemini API support.</li>
-        <li><strong>Installable Android PWA:</strong> Progressive Web App with app-shell caching, standalone display mode, and touch-friendly controls.</li>
-      </ul>
-      <div class="speaker-notes">
-        <strong>Key Note:</strong> "All core modules were built in a 4-week solo development plan, with collaborative rich-text document editing explicitly deferred as future scope."
-      </div>
-    </div>
-
-    <!-- Slide 4: System Architecture -->
-    <div class="slide">
-      <h2>3. Multi-Tier Microservices Architecture</h2>
-      <div class="grid-2">
-        <div>
-          <h3>Frontend Presentation Layer</h3>
-          <ul>
-            <li>React 18 SPA bundled with Vite</li>
-            <li>Tailwind CSS & Lucide React Icons</li>
-            <li>Progressive Web App (PWA) with <code>sw.js</code></li>
-            <li>Recharts SVG Visual Analytics</li>
-          </ul>
-          <h3>Application Server Layer</h3>
-          <ul>
-            <li>Express.js REST API (Node.js LTS, <code>express-rate-limit</code>)</li>
-            <li>Socket.IO bidirectional room multicast (membership-checked)</li>
-            <li>JWT Access Tokens (15 min, <code>userId</code> only) + httpOnly Cookies</li>
-          </ul>
-        </div>
-        <div>
-          <h3>Machine Learning Microservice</h3>
-          <ul>
-            <li>Python 3.12 + FastAPI (Port 8000)</li>
-            <li>scikit-learn Pipeline (OneHotEncoder + StandardScaler)</li>
-            <li>Joblib serialized model artifacts (5s caller timeout)</li>
-          </ul>
-          <h3>Database & Storage Layer</h3>
-          <ul>
-            <li>PostgreSQL 18 (<strong>18 normalized tables</strong>, 0 DB triggers)</li>
-            <li>Audit history: <code>task_status_history</code> (in transaction)</li>
-            <li>Single-origin static bundle serving + <code>multer@2.5.0</code></li>
-          </ul>
-        </div>
-      </div>
-    </div>
-
-    <!-- Slide 5: Machine Learning Methodology -->
-    <div class="slide">
-      <h2>4. Machine Learning: 5-Fold Cross-Validation</h2>
-      <p>Trained on a 3,000-record synthetic dataset (80% train, 20% test stratified split):</p>
-      <table>
-        <thead>
-          <tr>
-            <th>Model Evaluation Metric</th>
-            <th>Logistic Regression (Baseline)</th>
-            <th>Random Forest (Primary)</th>
-            <th>Academic Interpretation</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>5-Fold CV Accuracy</strong></td>
-            <td><strong>90.17% (±0.97%)</strong></td>
-            <td>89.03% (±1.03%)</td>
-            <td>Baseline fit slightly better due to linear synthetic generation.</td>
-          </tr>
-          <tr>
-            <td><strong>5-Fold CV ROC-AUC</strong></td>
-            <td><strong>0.9662</strong></td>
-            <td>0.9564</td>
-            <td>Both models cleanly separate delayed vs on-time tasks.</td>
-          </tr>
-          <tr>
-            <td><strong>Majority-Class Baseline</strong></td>
-            <td>67.17%</td>
-            <td>67.17%</td>
-            <td>Both models comfortably beat the 67% naive guessing baseline.</td>
-          </tr>
-        </tbody>
-      </table>
-      <div class="speaker-notes">
-        <strong>Viva Defense Q1:</strong> "On synthetic data, Logistic Regression slightly outperformed Random Forest. I retained Random Forest because it is architecturally prepared for non-linear interactions in real software team data and outputs feature importance rankings."
-      </div>
-    </div>
-
-    <!-- Slide 6: Feature Importance -->
-    <div class="slide">
-      <h2>5. Feature Importance Rankings (Random Forest)</h2>
-      <div class="grid-2">
-        <div>
-          <table>
-            <thead>
-              <tr><th>Predictive Feature</th><th>Weight</th></tr>
-            </thead>
-            <tbody>
-              <tr><td><code>midpoint_progress</code></td><td><strong>38.96%</strong></td></tr>
-              <tr><td><code>complexity</code></td><td><strong>27.45%</strong></td></tr>
-              <tr><td><code>assignee_workload</code></td><td><strong>12.02%</strong></td></tr>
-              <tr><td><code>previous_delays_ratio</code></td><td><strong>10.54%</strong></td></tr>
-              <tr><td><code>estimated_days</code></td><td>4.65%</td></tr>
-              <tr><td><code>team_size</code></td><td>2.95%</td></tr>
-              <tr><td><code>priority_low / medium</code></td><td>3.43%</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div>
-          <h3>Academic Caveat</h3>
-          <p>
-            <em>"Feature importance reflects the synthetic generation rules, rather than proven real-world project dynamics."</em>
+        <div class="card" style="border-left: 6px solid var(--primary); padding: 18px 22px;">
+          <div class="tier-label" style="color: var(--primary);">Database: PostgreSQL 18 (Port 5432)</div>
+          <p style="font-size: 1.05rem; margin-bottom: 0; line-height: 1.6;">
+            • 21 Relational tables for users, tasks, docs, and chat.<br>
+            • Strict tenant privacy: Users only see their team's data.<br>
+            • Full audit history of task status changes and revisions.
           </p>
-          <p>
-            In our generation formula, midpoint progress and task complexity were weighted heavily. Random Forest successfully learned these underlying generation rules as expected.
+        </div>
+        <div class="card" style="border-left: 6px solid var(--emerald); padding: 18px 22px;">
+          <div class="tier-label" style="color: var(--emerald);">AI / ML Tier: Python FastAPI (Port 8000)</div>
+          <p style="font-size: 1.05rem; margin-bottom: 0; line-height: 1.6;">
+            • Random Forest ML model with 89.03% delay prediction accuracy.<br>
+            • Decoupled service: Heavy AI never slows down the website.<br>
+            • Google Gemini AI integration for meeting summaries.
           </p>
         </div>
       </div>
     </div>
 
-    <!-- Slide 7: Database & Multi-Tenant Isolation -->
+    <!-- SLIDE 6: LIVE PROJECT DEMO & CLICKABLE LINK (LAST SLIDE!) -->
     <div class="slide">
-      <h2>6. Database Design & Multi-Tenant Isolation</h2>
-      <ul>
-        <li><strong>18 Relational Tables:</strong> Enforce foreign key referential integrity in PostgreSQL 18 (<code>001_initial_schema.sql</code> + <code>003_invitations_and_departments.sql</code>).</li>
-        <li><strong>Transactional Audit Trail:</strong> Every Kanban status transition appends a row to <code>task_status_history</code> inside the <code>taskController.js</code> transaction (no database triggers).</li>
-        <li><strong>Two-Layer Tenant Isolation:</strong> <code>requireRole</code> enforces RBAC on org/analytics routes (HTTP 403), while <code>tenantAccess.js</code> resolves orgs through workspaces for tasks, channels, messages, files, and Socket.IO (HTTP 404 across tenants).</li>
-        <li><strong>15 Multi-Tenant Tests:</strong> <code>test_multitenancy.js</code> (10 checks) + <code>test_tenant_tasks.js</code> (5 checks, closed from 0/5 to 5/5).</li>
-      </ul>
-      <div class="speaker-notes">
-        <strong>Viva Defense Q3:</strong> "Foreign keys do NOT isolate tenants. The JWT carries only userId; org/analytics routes verify organization_members via requireRole (403), and task/chat/file/socket handlers resolve org ownership through the workspace via tenantAccess.js (404)."
+      <h2>Slide 6: Live Project Demo & Evaluator Access</h2>
+      <div style="text-align: center; margin-bottom: 22px;">
+        <p style="font-size: 1.25rem; color: var(--text-body); margin-bottom: 16px;">
+          The system is live and running locally. Click the button below to launch the project:
+        </p>
+        <!-- PROMINENT CLICKABLE BUTTON -->
+        <a href="http://localhost:5000" target="_blank" class="btn-live">
+          🚀 CLICK HERE TO OPEN LIVE PROJECT (http://localhost:5000)
+        </a>
       </div>
-    </div>
 
-    <!-- Slide 8: Real-Time Chat & AI Assistant -->
-    <div class="slide">
-      <h2>7. Real-Time Chat & AI Assistant</h2>
-      <div class="grid-2">
-        <div>
-          <h3>Socket.IO Chat Engine</h3>
-          <ul>
-            <li><strong>Persist-Then-Broadcast:</strong> Re-verifies channel org membership on <code>channel:join</code> and <code>message:send</code>, saves to PostgreSQL, then emits.</li>
-            <li><strong>Reconnection Resilience:</strong> On reload (F5) or reconnect, clients fetch authorized history via REST API.</li>
-          </ul>
+      <div class="card" style="margin-top: 18px; border-color: var(--primary);">
+        <div style="font-size: 0.95rem; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 10px;">
+          Evaluator Demo Credentials
         </div>
-        <div>
-          <h3>Rule-Based AI Assistant (+ Optional Gemini)</h3>
-          <ul>
-            <li><strong>Summarizer:</strong> Local Extractive Engine selects key sentences without cutting decimal percentages (e.g., <code>89.3%</code>).</li>
-            <li><strong>Action Extractor:</strong> Heuristic Engine parses notes into structured task JSON items.</li>
-            <li><strong>Optional Gemini Support:</strong> Switches to Google Gemini through the API when server-side <code>GEMINI_API_KEY</code> is set.</li>
-          </ul>
-        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Role / Persona</th>
+              <th>Login Email</th>
+              <th>Password</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Admin Account (Team Lead)</strong></td>
+              <td><code>admin@workspace.local</code></td>
+              <td><code>password123</code></td>
+            </tr>
+            <tr>
+              <td><strong>Manager Account (Project Lead)</strong></td>
+              <td><code>priya@workspace.local</code></td>
+              <td><code>password123</code></td>
+            </tr>
+            <tr>
+              <td><strong>Member Account (Developer)</strong></td>
+              <td><code>rahul@workspace.local</code></td>
+              <td><code>password123</code></td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-    </div>
 
-    <!-- Slide 9: Android PWA & Mobile View -->
-    <div class="slide">
-      <h2>8. Installable Android Progressive Web App</h2>
-      <ul>
-        <li><strong>App Shell Caching:</strong> Service Worker (<code>sw.js</code>) caches HTML, CSS, JS, and icons so the app launches quickly.</li>
-        <li><strong>Zero API Caching:</strong> All <code>/api/</code> and WebSocket calls bypass cache so data always comes live from the server.</li>
-        <li><strong>Installed on Physical Android:</strong> Verified via Cloudflare Tunnel over HTTPS on a real Android phone in standalone display mode.</li>
-        <li><strong>Touch-Friendly Controls:</strong> Each Kanban card features a 1-tap column selector alongside desktop drag-and-drop.</li>
-        <li><strong>Zero Horizontal Overflow:</strong> Navigation automatically moves to an Android bottom bar at 390px mobile viewport.</li>
-      </ul>
-    </div>
-
-    <!-- Slide 10: Conclusion & Defense -->
-    <div class="slide">
-      <h2>9. Conclusion & Verification Summary</h2>
-      <ul>
-        <li><strong>36 Automated Checks Passed (7 Suites):</strong> Auth (6), Org RBAC (10), Analytics (5), AI (4), Files (4), Cross-Tenant Tasks/Chat/Files/Socket (5), ML (2).</li>
-        <li><strong>Graceful Degradation & Rate Limiting:</strong> Chrome ML-down drag saved Row 36 without error; auth brute-force guard skips valid logins.</li>
-        <li><strong>Verified On Physical Hardware:</strong> Tested on Google Chrome and installed as a PWA on an Android phone over HTTPS.</li>
-        <li><strong>Limitations &amp; Future Work:</strong> Synthetic ML data, deferred CRDT editor (<code>documents</code>), no load testing, PWA (not native APK), no localization, and RAG file search.</li>
-      </ul>
-      <div style="text-align: center; margin-top: 36px;">
-        <h3 style="color: #38bdf8; font-size: 1.5rem;">Thank You! Questions & Live Demonstration</h3>
-      </div>
+      <p style="text-align: center; font-size: 0.95rem; color: var(--text-muted); margin-top: 16px; margin-bottom: 0;">
+        ML Service: <code>http://127.0.0.1:8000/health</code> (Online) &nbsp;|&nbsp; 1-Click Windows Launcher: <code>C:\dev\workspace-app\Start-Workspace.bat</code>
+      </p>
     </div>
 
   </div>
 
-  <!-- Footer Navigation Bar -->
-  <div class="footer-bar">
-    <div style="font-size: 0.95rem; color: #64748b;">
-      <span id="slide-num">Slide 1 of 10</span> | Shivashankargoud B R (KUB25MCA019) - Kishkindha University
-    </div>
-    <div class="controls">
-      <button onclick="prevSlide()">❮ Previous</button>
-      <button onclick="nextSlide()">Next ❯</button>
-      <button onclick="toggleNotes()">Speaker Notes</button>
-      <button onclick="toggleFullscreen()">Full Screen (F11)</button>
+  <div class="bottom-bar">
+    <div class="slide-indicator" id="slideIndicator">Slide 1 of 6</div>
+    <div class="nav-buttons">
+      <button class="btn-nav" id="prevBtn" onclick="prevSlide()">◀ Previous</button>
+      <button class="btn-nav" id="nextBtn" onclick="nextSlide()">Next ▶</button>
+      <button class="btn-nav" onclick="toggleFullscreen()" style="background: var(--primary); color: #fff; border-color: var(--primary);">⛶ Fullscreen</button>
     </div>
   </div>
 
   <script>
     let currentSlide = 0;
     const slides = document.querySelectorAll('.slide');
-    const slideNum = document.getElementById('slide-num');
+    const totalSlides = slides.length;
+    const indicator = document.getElementById('slideIndicator');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
 
     function showSlide(index) {
-      slides.forEach((s, i) => {
-        s.classList.toggle('active', i === index);
-      });
-      slideNum.textContent = `Slide ${index + 1} of ${slides.length}`;
+      if (index < 0 || index >= totalSlides) return;
+      slides[currentSlide].classList.remove('active');
+      currentSlide = index;
+      slides[currentSlide].classList.add('active');
+      indicator.textContent = `Slide ${currentSlide + 1} of ${totalSlides}`;
+      prevBtn.disabled = currentSlide === 0;
+      nextBtn.disabled = currentSlide === totalSlides - 1;
+      prevBtn.style.opacity = currentSlide === 0 ? "0.4" : "1";
+      nextBtn.style.opacity = currentSlide === totalSlides - 1 ? "0.4" : "1";
     }
 
     function nextSlide() {
-      if (currentSlide < slides.length - 1) {
-        currentSlide++;
-        showSlide(currentSlide);
-      }
+      if (currentSlide < totalSlides - 1) showSlide(currentSlide + 1);
     }
 
     function prevSlide() {
-      if (currentSlide > 0) {
-        currentSlide--;
-        showSlide(currentSlide);
-      }
-    }
-
-    function toggleNotes() {
-      const notes = document.querySelectorAll('.speaker-notes');
-      notes.forEach(n => {
-        n.style.display = (n.style.display === 'none' ? 'block' : 'none');
-      });
-    }
-
-    function toggleFullscreen() {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen();
-      } else {
-        if (document.exitFullscreen) {
-          document.exitFullscreen();
-        }
-      }
+      if (currentSlide > 0) showSlide(currentSlide - 1);
     }
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') nextSlide();
       if (e.key === 'ArrowLeft' || e.key === 'PageUp') prevSlide();
-      if (e.key === 'n' || e.key === 'N') toggleNotes();
     });
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme');
+      const target = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', target);
+    }
+
+    showSlide(0);
   </script>
 </body>
 </html>

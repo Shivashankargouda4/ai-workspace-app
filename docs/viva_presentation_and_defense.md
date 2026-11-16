@@ -33,8 +33,8 @@
 - Multi-tier architecture diagram:
   - **Client:** React 18 SPA, Vite, Tailwind CSS, TanStack Query, Recharts, PWA Service Worker (`sw.js` app-shell cache; `/api/` always network-fresh).
   - **API Server:** Express.js, Socket.IO, Helmet, `express-rate-limit` (`skipSuccessfulRequests: true`), JWT (`userId`-only access tokens) + `httpOnly` refresh cookies.
-  - **ML Microservice:** Python 3.12, FastAPI, scikit-learn Pipeline (Joblib) with 5-second timeout and graceful fallback.
-  - **Database:** PostgreSQL 18 with **18 normalized tables** (`001_initial_schema.sql` + `003_invitations_and_departments.sql`) and foreign key constraints.
+  - **ML Microservice:** Python 3.12, FastAPI, scikit-learn Pipeline (Joblib) with 10-second timeout and graceful fallback.
+  - **Database:** PostgreSQL 18 with **21 normalized tables** (`001_initial_schema.sql` + `003_invitations_and_departments.sql` + `004_v2_features.sql` + `005_code_and_meetings.sql`) and foreign key constraints.
 
 ### Slide 5: Machine Learning Methodology & Honest Findings
 - **Dataset:** 3,000 synthetic task records (probabilistic generation reflecting mid-sprint velocity).
@@ -67,8 +67,8 @@
 6. **Mobile PWA:** Show installed PWA running standalone on Android phone + recording backup.
 
 ### Slide 9: Project Limitations & Future Work
-- **Limitations:** Synthetic ML data; collaborative rich-text editor (Yjs) deferred; rule-based AI without vector RAG over files; PWA rather than native APK; no multi-language localization; no concurrency load testing.
-- **Future Scope:** Real-world team telemetry; CRDT collaborative editor reusing `documents` & `tenantAccess.js`; automated RAG file search; multi-language localization; concurrency load testing.
+- **Limitations:** Synthetic ML training data; rule-based AI without vector RAG over files; PWA rather than compiled native APK; English-only interface; high-concurrency load testing.
+- **Future Scope:** Real-world team telemetry across commercial teams; automated RAG file search with pgvector; compiled native mobile APKs; multi-language localization.
 
 ### Slide 10: Conclusion & Defense
 - Delivered a verified, multi-tenant collaborative platform across **36 automated checks (7 suites)** combining real-time communication, predictive analytics, and transactional auditing.
@@ -79,11 +79,11 @@
 
 > *"Good morning respected evaluators and guide. My project is an **AI-Powered Real-Time Collaborative Workspace with Predictive Analytics**, developed for Kishkindha University.
 >
-> Traditional project trackers like Jira or Trello are retrospective—they notify managers only after a deadline has been breached. The core innovation of this platform is proactive risk mitigation: as developers move cards on our Kanban board, `taskController.js` logs the audit transition inside a PostgreSQL transaction and passes velocity features (with a 5-second timeout and graceful failure fallback) to a FastAPI machine learning service that stores the delay prediction in `task_predictions`.
+> Traditional project trackers like Jira or Trello are retrospective—they notify managers only after a deadline has been breached. The core innovation of this platform is proactive risk mitigation: as developers move cards on our Kanban board, `taskController.js` logs the audit transition inside a PostgreSQL transaction and passes velocity features (with a 10-second timeout and graceful failure fallback) to a FastAPI machine learning service that stores the delay prediction in `task_predictions`.
 >
 > We evaluated both Logistic Regression and Random Forest using 5-Fold Stratified Cross-Validation on a 3,000-record dataset. On this synthetic dataset, Logistic Regression scored 90.17% vs Random Forest 89.03% CV accuracy. I retained Random Forest because it provides feature importance rankings and can capture non-linear interactions in real data, and I report honestly that it did not beat the baseline on this synthetic dataset.
 >
-> On the engineering side, the backend runs Node.js and PostgreSQL 18 with **18 normalized tables** and zero database triggers. The JWT carries only `userId`; organization and analytics routes verify `organization_members` in `requireRole` (HTTP 403), while task, chat, file, and Socket.IO handlers use our shared `tenantAccess.js` helper to resolve organization ownership through the workspace and return HTTP 404 across tenants. Writing `test_tenant_tasks.js` caught a real 0-of-5 cross-tenant leak on those sub-routes earlier, which I fixed and verified at 5 of 5.
+> On the engineering side, the backend runs Node.js and PostgreSQL 18 with **21 normalized tables** and zero database triggers. The JWT carries only `userId`; organization and analytics routes verify `organization_members` in `requireRole` (HTTP 403), while task, chat, file, and Socket.IO handlers use our shared `tenantAccess.js` helper to resolve organization ownership through the workspace and return HTTP 404 across tenants. Writing `test_tenant_tasks.js` caught a real 0-of-5 cross-tenant leak on those sub-routes earlier, which I fixed and verified at 5 of 5.
 >
 > For real-time chat, messages persist to PostgreSQL before broadcasting via Socket.IO. We also provide rule-based extractive summarization and heuristic action-item extraction (with optional Gemini support if an API key is configured), live SQL analytics, and an installable Android PWA app shell where `/api/` calls always fetch fresh server data.
 >

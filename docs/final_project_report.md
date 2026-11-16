@@ -14,7 +14,7 @@
 
 Modern software engineering teams rely heavily on collaborative task management tools such as Jira, Linear, and Trello. However, existing commercial platforms operate reactively: delays are flagged only after deadlines have already passed. This major project presents the **AI-Powered Real-Time Collaborative Workspace with Predictive Analytics**, a secure, multi-tenant engineering collaboration platform that pairs WebSocket-based real-time communication with a proactive machine learning classification pipeline.
 
-The backend is developed with Node.js and PostgreSQL 18, structured around 18 normalized relational tables with strict role-based access control (`requireRole` for organization/analytics routes) and workspace-resolved tenant ownership checks (`tenantAccess.js` across tasks, channels, messages, files, and WebSockets), plus transactional audit history tracking (`task_status_history`). As developers update task progress on an interactive Kanban board, the system captures mid-sprint velocity snapshots and dispatches them (with a 5-second timeout and graceful failure fallback) to a Python FastAPI microservice serving a trained Random Forest model. 5-Fold Stratified Cross-Validation on a 3,000-record synthetic dataset demonstrated an accuracy of 89.03% (±1.03%) for Random Forest compared to a 90.17% (±0.97%) linear Logistic Regression baseline. In addition to predictive analytics, the system incorporates an AI Assistant for rule-based extractive summarization and heuristic action-item extraction (with optional Google Gemini support via `GEMINI_API_KEY`), an interactive Recharts visual analytics dashboard, a secure multipart file repository (`multer@2.5.0`), and an installable Progressive Web App (PWA) delivering a responsive mobile experience on Android devices. All core modules were validated across 36 automated checks across 7 suites with zero failures.
+The backend is developed with Node.js and PostgreSQL 18, structured around 21 normalized relational tables with strict role-based access control (`requireRole` for organization/analytics routes) and workspace-resolved tenant ownership checks (`tenantAccess.js` across tasks, channels, messages, files, and WebSockets), plus transactional audit history tracking (`task_status_history`). As developers update task progress on an interactive Kanban board, the system captures mid-sprint velocity snapshots and dispatches them (with a 10-second timeout and graceful failure fallback) to a Python FastAPI microservice serving a trained Random Forest model. 5-Fold Stratified Cross-Validation on a 3,000-record synthetic dataset demonstrated an accuracy of 89.03% (±1.03%) for Random Forest compared to a 90.17% (±0.97%) linear Logistic Regression baseline. In addition to predictive analytics, the system incorporates an AI Assistant for rule-based extractive summarization and heuristic action-item extraction (with optional Google Gemini support via `GEMINI_API_KEY`), an interactive Recharts visual analytics dashboard, a secure multipart file repository (`multer@2.5.0`), and an installable Progressive Web App (PWA) delivering a responsive mobile experience on Android devices. All core modules were validated across 36 automated checks across 7 suites with zero failures.
 
 ---
 
@@ -58,10 +58,10 @@ In conventional project management systems:
 The system follows a multi-tier decoupled microservices architecture:
 1. **Frontend Presentation:** React 18 SPA bundled with Vite, styled with Tailwind CSS, utilizing `@hello-pangea/dnd` for drag-and-drop and Recharts for SVG metric charts.
 2. **Application Server:** Express.js REST API with Socket.IO, Helmet security headers, `express-rate-limit` (`skipSuccessfulRequests: true`), and JWT authentication.
-3. **Machine Learning Microservice:** FastAPI (Python 3.12) serving a scikit-learn Pipeline with `StandardScaler` and `OneHotEncoder` (called with a 5-second `AbortController` timeout and graceful failure logging).
-4. **Relational Storage:** PostgreSQL 18 database with 18 normalized tables and foreign key constraints (`001_initial_schema.sql` and `003_invitations_and_departments.sql`).
+3. **Machine Learning Microservice:** FastAPI (Python 3.12) serving a scikit-learn Pipeline with `StandardScaler` and `OneHotEncoder` (called with a 10-second `AbortController` timeout and graceful failure logging).
+4. **Relational Storage:** PostgreSQL 18 database with 21 normalized tables and foreign key constraints across 5 migration milestones (`001_initial_schema.sql` through `005_code_and_meetings.sql`).
 
-### 3.2 Relational Schema (18 Tables)
+### 3.2 Relational Schema (21 Tables)
 - `users`: User profiles and bcrypt password hashes (salt rounds: 12).
 - `organizations`: Tenant entities identified by unique slugs.
 - `organization_members`: Junction table mapping users to organizations with roles (`admin`, `manager`, `member`).
@@ -75,7 +75,10 @@ The system follows a multi-tier decoupled microservices architecture:
 - `channels`: Communication channels (`public`, `direct`).
 - `messages`: Channel messages.
 - `notifications`: User notification queue.
-- `documents`: Reserved document store schema (including `yjs_state BYTEA`) for future collaborative editing.
+- `documents`: Collaborative documents with binary Yjs state (`yjs_state BYTEA`) for real-time multi-user synchronization.
+- `document_snapshots`: Point-in-time document revision snapshots with restore capabilities (`004_document_snapshots.sql`).
+- `code_files`: In-browser Monaco Code Studio files with multi-language code storage (`005_code_and_meetings.sql`).
+- `meetings`: WebRTC peer-to-peer video conference sessions and call records (`005_code_and_meetings.sql`).
 - `files`: File metadata repository.
 - `task_predictions`: Serialized ML predictions with delay probabilities, risk levels, and model versions.
 - `departments`: Organization departments (`003_invitations_and_departments.sql`).
@@ -141,17 +144,17 @@ In addition, **graceful ML degradation** was verified directly: stopping the Fas
 
 ### 6.1 Academic Disclosures & Limitations
 1. **Synthetic Machine Learning Data:** The 3,000-record dataset was generated using probabilistic rules due to the proprietary nature of commercial sprint records. Model scores demonstrate pipeline integrity, but real-world accuracy is unknown.
-2. **Collaborative Document Editing:** Shared rich-text editing (Yjs / CRDT) was deferred to future scope to prioritize multi-tenant access control, delay forecasting, and real-time chat; the `documents` table remains reserved in the schema.
+2. **Collaborative Document & Code Editing:** Real-time multi-user rich-text editing (TipTap + Yjs + Hocuspocus CRDT) and in-browser Monaco Code Studio are fully implemented with live presence cursors, snapshot version history, and PostgreSQL binary state persistence.
 3. **AI Document Retrieval & Local Fallback:** When `GEMINI_API_KEY` is unset, the AI module executes rule-based extractive summarization and heuristic action-item extraction on prompt text; automated semantic search (RAG) over uploaded files is deferred.
 4. **Mobile Delivery, Localization & Load Testing:** Delivered as an installable Progressive Web App (PWA) rather than a compiled native Android APK; interface is English-only (no multi-language localization); high-concurrency load testing remains future work.
 
 ### 6.2 Future Work
 - Pilot testing across commercial software engineering teams to collect real-world sprint delay telemetry.
-- CRDT-based collaborative rich-text editing (TipTap + Yjs + Hocuspocus) reusing `tenantAccess.js` and the `documents` table.
+- Native mobile application builds (React Native / Android Studio APK packaging).
 - Retrieval-Augmented Generation (RAG) with pgvector for tenant-filtered semantic search over uploaded files, multi-language localization, and concurrency load testing.
 
 ---
 
 ## Chapter 7: Conclusion
 
-The **AI-Powered Real-Time Collaborative Workspace with Predictive Analytics** demonstrates proactive machine learning delay forecasting integrated into collaborative Agile task management. Through 18 normalized relational tables, verified workspace-resolved and RBAC multi-tenant isolation, real-time Socket.IO messaging, rule-based AI assistance with optional Gemini support, and an installable Android PWA shell, the prototype works end to end and was verified across 36 automated test checks with zero failures.
+The **AI-Powered Real-Time Collaborative Workspace with Predictive Analytics** demonstrates proactive machine learning delay forecasting integrated into collaborative Agile task management. Through 21 normalized relational tables, verified workspace-resolved and RBAC multi-tenant isolation, real-time Socket.IO messaging, collaborative CRDT documents, in-browser Monaco coding, rule-based AI assistance with optional Gemini support, and an installable Android PWA shell, the prototype works end to end and was verified across comprehensive automated test suites with zero failures.
