@@ -21,7 +21,7 @@ services:
     name: workspace-app
     runtime: node
     plan: free
-    buildCommand: npm --prefix client install && npm --prefix client run build && npm --prefix server install
+    buildCommand: npm --prefix client install --include=dev && npm --prefix client run build && npm --prefix server install
     startCommand: node server/src/server.js
     healthCheckPath: /api/health
     envVars:

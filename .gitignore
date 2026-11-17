@@ -20,7 +20,7 @@ __pycache__/
 .pytest_cache/
 
 # Production builds
-dist/
+# client/dist is committed for cloud deployment resilience
 build/
 
 # Logs
