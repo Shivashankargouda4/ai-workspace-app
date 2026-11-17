@@ -69,7 +69,37 @@ export default function Login() {
           </button>
         </form>
 
-        <div className="mt-6 text-center text-sm text-slate-600">
+        {/* Quick 1-Click Demo Login for Evaluators */}
+        <div className="mt-6 pt-5 border-t border-slate-100">
+          <p className="text-xs font-semibold uppercase text-slate-500 mb-2.5 text-center tracking-wider">
+            Quick Demo Login (1-Click Fill)
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() => { setEmail('admin@workspace.local'); setPassword('password123'); }}
+              className="px-2 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg text-center transition border border-slate-200"
+            >
+              👑 Admin
+            </button>
+            <button
+              type="button"
+              onClick={() => { setEmail('priya@workspace.local'); setPassword('password123'); }}
+              className="px-2 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg text-center transition border border-slate-200"
+            >
+              💼 Manager
+            </button>
+            <button
+              type="button"
+              onClick={() => { setEmail('rahul@workspace.local'); setPassword('password123'); }}
+              className="px-2 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg text-center transition border border-slate-200"
+            >
+              💻 Member
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-5 text-center text-sm text-slate-600">
           Don't have an account?{' '}
           <Link to="/register" className="text-brand-600 font-semibold hover:underline">
             Register here

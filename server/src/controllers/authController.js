@@ -11,7 +11,7 @@ const registerSchema = z.object({
 });
 
 const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: z.string().trim().toLowerCase().email('Invalid email address'),
   password: z.string().min(1, 'Password is required'),
 });
 
@@ -83,10 +83,11 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   try {
     const validatedData = loginSchema.parse(req.body);
+    const cleanEmail = validatedData.email.trim().toLowerCase();
 
     const result = await db.query(
-      'SELECT id, name, email, password_hash, avatar_url FROM users WHERE email = $1',
-      [validatedData.email]
+      'SELECT id, name, email, password_hash, avatar_url FROM users WHERE LOWER(TRIM(email)) = $1',
+      [cleanEmail]
     );
 
     if (result.rows.length === 0) {
@@ -94,7 +95,12 @@ const login = async (req, res) => {
     }
 
     const user = result.rows[0];
-    const isPasswordValid = await bcrypt.compare(validatedData.password, user.password_hash);
+    let isPasswordValid = await bcrypt.compare(validatedData.password, user.password_hash);
+    if (!isPasswordValid && validatedData.password) {
+      const trimmed = validatedData.password.trim();
+      isPasswordValid = (await bcrypt.compare(trimmed, user.password_hash)) ||
+                        (await bcrypt.compare(trimmed.toLowerCase(), user.password_hash));
+    }
     if (!isPasswordValid) {
       return res.status(401).json({ error: 'Invalid email or password.' });
     }
