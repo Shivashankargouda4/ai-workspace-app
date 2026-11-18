@@ -53,7 +53,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updateUser = (nextUser) => {
-    setUser(nextUser);
+    setUser((prev) => ({ ...prev, ...nextUser }));
   };
 
   return (

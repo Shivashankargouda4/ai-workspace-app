@@ -20,7 +20,9 @@ router.post('/register', authLimiter, authController.register);
 router.post('/login', authLimiter, authController.login);
 router.post('/refresh', authController.refresh);
 router.post('/logout', authController.logout);
+router.post('/logout-all', requireAuth, authController.logoutAll);
 router.get('/me', requireAuth, authController.getMe);
 router.patch('/me', requireAuth, authController.updateProfile);
+router.post('/avatar', requireAuth, authController.uploadAvatarMiddleware.single('avatar'), authController.uploadAvatar);
 
 module.exports = router;

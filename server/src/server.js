@@ -158,6 +158,13 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/code', codeRoutes);
 app.use('/api/meetings', meetingRoutes);
 
+// Serve uploaded avatars & user assets statically
+const uploadsDir = path.resolve(__dirname, '../uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+app.use('/uploads', express.static(uploadsDir));
+
 // Serve static React client if built (Single-Origin / Mobile Tunnel / Production mode)
 const distPath = path.resolve(__dirname, '../../client/dist');
 if (fs.existsSync(distPath)) {

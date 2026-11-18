@@ -15,7 +15,11 @@ const requireAuth = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET || 'super_secret_access_token_key');
 
     // Retrieve user from DB to verify active status
-    const result = await db.query('SELECT id, name, email, avatar_url FROM users WHERE id = $1', [decoded.userId]);
+    const result = await db.query(
+      `SELECT id, name, email, avatar_url, gender, phone, bio, theme_preference, notification_preferences, created_at, updated_at
+       FROM users WHERE id = $1`,
+      [decoded.userId]
+    );
     if (result.rows.length === 0) {
       return res.status(401).json({ error: 'User no longer exists.' });
     }

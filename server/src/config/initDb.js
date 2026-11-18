@@ -7,6 +7,7 @@ const SCHEMA_MIGRATIONS = [
   '003_invitations_and_departments.sql',
   '004_v2_features.sql',
   '005_code_and_meetings.sql',
+  '006_profile_settings.sql',
 ];
 
 /**
@@ -19,7 +20,8 @@ async function ensureDatabaseReady() {
             to_regclass('public.invitations') AS invitations_tbl,
             to_regclass('public.document_snapshots') AS snapshots_tbl,
             to_regclass('public.code_files') AS code_files_tbl,
-            to_regclass('public.meetings') AS meetings_tbl`
+            to_regclass('public.meetings') AS meetings_tbl,
+            (SELECT column_name FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'gender' LIMIT 1) AS gender_col`
   );
   const {
     users_tbl,
@@ -27,8 +29,9 @@ async function ensureDatabaseReady() {
     snapshots_tbl,
     code_files_tbl,
     meetings_tbl,
+    gender_col,
   } = check.rows[0] || {};
-  if (users_tbl && invitations_tbl && snapshots_tbl && code_files_tbl && meetings_tbl) {
+  if (users_tbl && invitations_tbl && snapshots_tbl && code_files_tbl && meetings_tbl && gender_col) {
     return false;
   }
 
@@ -73,6 +76,14 @@ async function ensureDatabaseReady() {
         );
         await client.query(sql005);
         console.log('🗄️ Applied 005_code_and_meetings.sql migration.');
+      }
+      if (!gender_col) {
+        const sql006 = fs.readFileSync(
+          path.join(migrationsDir, '006_profile_settings.sql'),
+          'utf8'
+        );
+        await client.query(sql006);
+        console.log('🗄️ Applied 006_profile_settings.sql migration.');
       }
     }
 
